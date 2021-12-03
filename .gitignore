@@ -30,3 +30,18 @@
 *.exe
 *.out
 *.app
+
+# Include
+MonCrafte/include/*
+
+#Library
+MonCrafte/library/*
+
+# Visual Studio
+.vs/*
+x64/*
+MonCrafte/x64/*
+*.sln
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
