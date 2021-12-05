@@ -1,9 +1,13 @@
+#define _USE_MATH_DEFINES
 #include <iostream>
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 
 #include <glm/glm.hpp>
 #include <glm/ext.hpp>
+
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb/stb_image.h>
 
 #include <cstdlib>
 #include <iostream>
@@ -15,29 +19,46 @@
 #include <memory>
 
 #include "Block.h"
+#include "Sphere.h"
 #include "Camera.h"
+#include "Light.h"
 
+// general
 GLFWwindow* window = nullptr;
 GLuint program = 0;
 Camera camera;
+Light light;
 
-// Time
+// blocks
+auto block = std::make_shared<Block>();
+std::vector<glm::vec3> blockPos = {
+glm::vec3(0.0f, 0.0f, 0.0f),
+glm::vec3(0.0f, 2.0f, 0.0f)
+};
+GLuint blockTexture = 0;
+
+// sun
+auto sun = std::make_shared<Sphere>();
+GLuint sunTexture = 0;
+
+
+// time
 float currentFrame = 0.f;  // Time of current frame
 float lastFrame    = 0.f;  // Time of last frame
 
-// Mouse
+// mouse
 float lastX;
 float lastY;
 bool firstMouse = true;
-bool onClick = false;
 
+// Executed each time the window is resized.
 void windowSizeCallback(GLFWwindow* window, int width, int height)
 {
     camera.setAspectRatio(static_cast<float>(width) / static_cast<float>(height));
-    // Dimension of the rendering region in the window
     glViewport(0, 0, (GLint)width, (GLint)height);
 }
 
+// Executed each time a key is pressed.
 void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
     if (action == GLFW_PRESS && key == GLFW_KEY_E) {
@@ -60,7 +81,7 @@ void mouseCallback(GLFWwindow* window, double xpos, double ypos)
         lastY = ypos;
         firstMouse = false;
     }
-    float xoffset = lastX - xpos;
+    float xoffset = xpos - lastX;
     float yoffset = lastY - ypos;
     lastX = xpos;
     lastY = ypos;
@@ -74,6 +95,7 @@ void scrollCallback(GLFWwindow* window, double xoffset, double yoffset)
     camera.processMouseScroll(yoffset);
 }
 
+// Executed each time an exception is raised.
 void errorCallback(int error, const char* desc)
 {
     std::cout << "Error " << error << ": " << desc << std::endl;
@@ -100,7 +122,6 @@ void initGLFW()
     // Create the window
     size_t height = 1500;
     size_t width = 900;
-
     window = glfwCreateWindow(height, width, "MonCrafte", nullptr, nullptr);
 
     if (!window)
@@ -124,7 +145,8 @@ void initGLFW()
 void initOpenGL()
 {
     // Load extensions for modern OpenGL
-    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
+    if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
+    {
         std::cerr << "ERROR: Failed to initialize OpenGL context" << std::endl;
         glfwTerminate();
         std::exit(EXIT_FAILURE);
@@ -134,7 +156,7 @@ void initOpenGL()
     glEnable(GL_CULL_FACE); // Enables face culling (based on the orientation defined by the CW/CCW enumeration).
     glDepthFunc(GL_LESS);   // Specify the depth test for the z-buffer
     glEnable(GL_DEPTH_TEST);      // Enable the z-buffer test in the rasterization
-    glClearColor(245.f/255, 214.f/255, 175.f/255, 1.f); // specify the background color
+    glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 }
 
 // Loads the content of an ASCII file in a standard C++ string
@@ -146,7 +168,8 @@ std::string file2String(const std::string& filename)
     return buffer.str();
 }
 
-void loadShader(GLuint program, GLenum type, const std::string& shaderFilename) {
+void loadShader(GLuint program, GLenum type, const std::string& shaderFilename)
+{
     GLuint shader = glCreateShader(type); // Create the shader, e.g., a vertex shader to be applied to every single vertex of a mesh
     std::string shaderSourceString = file2String(shaderFilename); // Loads the shader source from a file to a C++ string
     const GLchar* shaderSource = (const GLchar*)shaderSourceString.c_str(); // Interface the C++ string through a C pointer
@@ -162,28 +185,64 @@ void initGPUprogram()
     loadShader(program, GL_VERTEX_SHADER, "shader/vertexShader.glsl");
     loadShader(program, GL_FRAGMENT_SHADER, "shader/fragmentShader.glsl");
 
+    glUniform1i(glGetUniformLocation(program, "material.textureData"), 0);
     glLinkProgram(program);
     glUseProgram(program);
 }
 
-void render(std::shared_ptr<Block> block)
+GLuint loadTextureFromFileToGPU(const std::string& filename)
 {
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    int width, height, numComponents;
 
-    const glm::mat4 viewMatrix = camera.computeViewMatrix();
-    const glm::mat4 projMatrix = camera.computeProjectionMatrix();
+    // Loading the image in CPU memory using stb_image
+    unsigned char* data = stbi_load(
+        filename.c_str(),
+        &width, &height,
+        &numComponents,
+        0);
 
-    // compute the view matrix of the camera and pass it to the GPU program
-    glUniformMatrix4fv(glGetUniformLocation(program, "viewMat"), 1, GL_FALSE, glm::value_ptr(viewMatrix));
-    // compute the projection matrix of the camera and pass it to the GPU program
-    glUniformMatrix4fv(glGetUniformLocation(program, "projMat"), 1, GL_FALSE, glm::value_ptr(projMatrix));
+    GLuint texID;
+    // creates a texture and upload the image data in GPU memory
+    glGenTextures(1, &texID);
+    glBindTexture(GL_TEXTURE_2D, texID);
 
-    block->draw();
+    // setup texture filtering option and repeat model
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+    // fills the GPU texture with the data stored in the CPU image
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+
+    // Freeing the now useless CPU memory
+    stbi_image_free(data);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    return texID;
 }
 
-void clear(std::shared_ptr<Block> block)
+void update()
+{
+    float time = 2 * M_PI * currentFrame;
+    light.setPos( glm::vec3(5 * std::cos(time / 5), 5 * std::sin(time / 3), 5 * std::sin(time / 5)));
+}
+
+void render()
+{
+    // render camera
+    camera.render(window, program, currentFrame - lastFrame);
+    // render light
+    light.render(program);
+    sun->render(program, glm::translate(glm::mat4(1.0f), light.getPos()), sunTexture);
+    // render each block
+    for (unsigned int i = 0; i < blockPos.size(); i++)
+        block->render(program, glm::translate(glm::mat4(1.0f), blockPos[i]), blockTexture);
+}
+
+void clear()
 {
     block->freeBuffer();
+    sun->freeBuffer();
     glDeleteProgram(program);
     glfwDestroyWindow(window);
     glfwTerminate();
@@ -191,30 +250,44 @@ void clear(std::shared_ptr<Block> block)
 
 int main()
 {
-    auto block = std::make_shared<Block>();
-    block->initGeometry();
-
+    // initialize openGL environment
     initGLFW();
     initOpenGL();
     initGPUprogram();
 
-    camera = Camera(glm::vec3(0.0, 5.0, 0.0), glm::vec3(0.0, -1.0, 0.0), glm::vec3(0.0, 0.0, 1.0));
+    // setup the camera
+    camera = Camera(
+        glm::vec3(0.0, 0.0, 5.0),   // initial position
+        glm::vec3(0.0, 0.0, -1.0),  // front vector
+        glm::vec3(0.0, 1.0, 0.0));  // up vector
     int width, height;
     glfwGetWindowSize(window, &width, &height);
     camera.setAspectRatio(static_cast<float>(width) / static_cast<float>(height));
 
-    block->bindToGPU();
+    // setup the light
+    light = Light(
+        glm::vec3(5.0, 2.0, 0.0),   // initial position
+        glm::vec3(1.0, 1.0, 1.0));  // color
 
+    // create some blocks
+    block->initGeometry();
+    blockTexture = loadTextureFromFileToGPU("texture/brick.png");
+
+    // create sun
+    sun->initGeometry();
+    sunTexture = loadTextureFromFileToGPU("texture/light.jpg");
+    
     while (!glfwWindowShouldClose(window))
     {
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
         lastFrame = currentFrame;
         currentFrame = glfwGetTime();
-        camera.updateCamPos(window, currentFrame - lastFrame);
+        update();
+        render();
 
-        render(block);
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
-    clear(block);
+    clear();
     return EXIT_SUCCESS;
 }

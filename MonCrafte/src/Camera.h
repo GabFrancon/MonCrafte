@@ -1,3 +1,4 @@
+#include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <glm/glm.hpp>
 #include <glm/ext.hpp>
@@ -17,6 +18,7 @@ public:
     void processMouseMoovement(float xoffset, float yoffset, GLboolean constrainPitch = true);
     void processMouseScroll(float yoffset);
     void updateCameraVectors();
+    void render(GLFWwindow* window, const GLuint program, const float deltaTime);
 
 private:
     glm::vec3 camPos;
@@ -25,12 +27,13 @@ private:
     glm::vec3 camRight;
     glm::vec3 worldUp;
 
-    float fov = 45.f;               // field of view, in degrees
-    float aspectRatio = 1.f;        // ratio between the width and the height of the image
-    float mouseSensitivity = 0.03f; // sensitivity coefficient of mouse movements
-    float near = 0.1f;              // distance before which geometry is excluded from the rasterization process
-    float far = 250.1f;             // distance after which the geometry is excluded from the rasterization process
-    float yaw = -90.f;              // yaw euler angle
-    float pitch = 0.f;              // pitch euler angle
+    float fov              = 45.f;      // field of view, in degrees
+    float aspectRatio      = 1.f;       // ratio between the width and the height of the image
+    float mouseSensitivity = 0.05f;     // sensitivity coefficient of mouse movements
+    float playerVelociy    = 7.f;       // sensitivity coefficient of player deplacement
+    float near             = 0.1f;      // distance before which geometry is excluded from the rasterization process
+    float far              = 250.1f;    // distance after which the geometry is excluded from the rasterization process
+    float yaw              = -90.f;     // yaw euler angle
+    float pitch            = 0.f;       // pitch euler angle
 };
 

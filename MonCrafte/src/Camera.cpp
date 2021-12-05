@@ -28,7 +28,7 @@ glm::mat4 Camera::computeProjectionMatrix() const
 
 void Camera::updateCamPos(GLFWwindow* window, float deltaTime)
 {
-    float cameraSpeed = 15.f * deltaTime;
+    float cameraSpeed = playerVelociy * deltaTime;
 
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
         camPos += camFront * cameraSpeed;
@@ -38,6 +38,10 @@ void Camera::updateCamPos(GLFWwindow* window, float deltaTime)
         camPos -= camRight * cameraSpeed;
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
         camPos += camRight * cameraSpeed;
+    if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
+        camPos += worldUp * cameraSpeed / 2;
+    if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
+        camPos -= worldUp * cameraSpeed / 2;
 }
 
 void Camera::processMouseMoovement(float xoffset, float yoffset, GLboolean constrainPitch)
@@ -73,10 +77,18 @@ void Camera::updateCameraVectors()
     // calculate the new Front vector
     glm::vec3 front;
     front.x = std::cos(glm::radians(yaw)) * std::cos(glm::radians(pitch));
-    front.y = std::sin(glm::radians(yaw)) * std::cos(glm::radians(pitch));
-    front.z = std::sin(glm::radians(pitch));
+    front.y = std::sin(glm::radians(pitch));
+    front.z = std::sin(glm::radians(yaw)) * std::cos(glm::radians(pitch));
 
     camFront = glm::normalize(front);
     camRight = glm::normalize(glm::cross(camFront, worldUp));
     camUp = glm::normalize(glm::cross(camRight, camFront));
+}
+
+void Camera::render(GLFWwindow* window, const GLuint program, const float deltaTime)
+{
+    updateCamPos(window, deltaTime);
+    glUniformMatrix4fv(glGetUniformLocation(program, "viewMat"), 1, GL_FALSE, glm::value_ptr(computeViewMatrix()));
+    glUniformMatrix4fv(glGetUniformLocation(program, "projMat"), 1, GL_FALSE, glm::value_ptr(computeProjectionMatrix()));
+    glUniform3f(glGetUniformLocation(program, "camPos"), camPos[0], camPos[1], camPos[2]);
 }

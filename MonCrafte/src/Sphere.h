@@ -1,4 +1,3 @@
-
 #define _USE_MATH_DEFINES
 
 #include <vector>
@@ -9,23 +8,24 @@
 
 #include <glm/glm.hpp>
 #include <glm/ext.hpp>
-
-class Block
+class Sphere
 {
 private:
 	std::vector<float> vertexPositions;
 	std::vector<float> vertexNormals;
 	std::vector<float> vertexTextures;
+	std::vector<unsigned int> vertexIndices;
 
 	GLuint vao = 0;
 	GLuint posVbo = 0;
 	GLuint norVbo = 0;
 	GLuint texVbo = 0;
+	GLuint indVbo = 0;
 
-	float ambient = 0.3;
+	float ambient = 2;
 
 public:
-	Block() {};
+	Sphere() {};
 	void initGeometry();
 	void render(const GLuint program, glm::mat4 transMat, const GLuint texture);
 	void freeBuffer();
