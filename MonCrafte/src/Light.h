@@ -3,6 +3,12 @@
 #include <glm/glm.hpp>
 #include <glm/ext.hpp>
 
+#include<memory>
+#include "Sphere.h"
+
+#ifndef LIGHT_H
+#define LIGHT_H
+
 class Light
 {
 private:
@@ -15,6 +21,10 @@ public:
 
 	glm::vec3 getPos();
 	void setPos(glm::vec3 position);
-	void render(const GLuint program);
+	void render(const GLuint program, const GLuint texture, std::shared_ptr<Sphere> sun);
 };
+
+#endif // !LIGHT_H
+
+
 

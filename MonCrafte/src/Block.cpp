@@ -4,47 +4,47 @@ void Block::initGeometry()
 {
     vertexPositions = {
         // left
-        -1.0f,-1.0f,-1.0f, 
-        -1.0f,-1.0f, 1.0f,
-        -1.0f, 1.0f, 1.0f,
-        -1.0f,-1.0f,-1.0f,
-        -1.0f, 1.0f, 1.0f,
-        -1.0f, 1.0f,-1.0f,
+        -0.5f,-0.5f,-0.5f, 
+        -0.5f,-0.5f, 0.5f,
+        -0.5f, 0.5f, 0.5f,
+        -0.5f,-0.5f,-0.5f,
+        -0.5f, 0.5f, 0.5f,
+        -0.5f, 0.5f,-0.5f,
         // right
-         1.0f, 1.0f, 1.0f,
-         1.0f,-1.0f,-1.0f,
-         1.0f, 1.0f,-1.0f,
-         1.0f, 1.0f, 1.0f,
-         1.0f,-1.0f, 1.0f,
-         1.0f,-1.0f,-1.0f,
+         0.5f, 0.5f, 0.5f,
+         0.5f,-0.5f,-0.5f,
+         0.5f, 0.5f,-0.5f,
+         0.5f, 0.5f, 0.5f,
+         0.5f,-0.5f, 0.5f,
+         0.5f,-0.5f,-0.5f,
         // bottom
-         1.0f,-1.0f, 1.0f,
-        -1.0f,-1.0f,-1.0f,
-         1.0f,-1.0f,-1.0f,
-         1.0f,-1.0f, 1.0f,
-        -1.0f,-1.0f, 1.0f,
-        -1.0f,-1.0f,-1.0f,
+         0.5f,-0.5f, 0.5f,
+        -0.5f,-0.5f,-0.5f,
+         0.5f,-0.5f,-0.5f,
+         0.5f,-0.5f, 0.5f,
+        -0.5f,-0.5f, 0.5f,
+        -0.5f,-0.5f,-0.5f,
         // top
-         1.0f, 1.0f, 1.0f,
-         1.0f, 1.0f,-1.0f,
-        -1.0f, 1.0f,-1.0f,
-         1.0f, 1.0f, 1.0f,
-        -1.0f, 1.0f,-1.0f,
-        -1.0f, 1.0f, 1.0f,
+         0.5f, 0.5f, 0.5f,
+         0.5f, 0.5f,-0.5f,
+        -0.5f, 0.5f,-0.5f,
+         0.5f, 0.5f, 0.5f,
+        -0.5f, 0.5f,-0.5f,
+        -0.5f, 0.5f, 0.5f,
         // back
-         1.0f, 1.0f,-1.0f, 
-        -1.0f,-1.0f,-1.0f,
-        -1.0f, 1.0f,-1.0f,
-         1.0f, 1.0f,-1.0f,
-         1.0f,-1.0f,-1.0f,
-        -1.0f,-1.0f,-1.0f,
+         0.5f, 0.5f,-0.5f, 
+        -0.5f,-0.5f,-0.5f,
+        -0.5f, 0.5f,-0.5f,
+         0.5f, 0.5f,-0.5f,
+         0.5f,-0.5f,-0.5f,
+        -0.5f,-0.5f,-0.5f,
         // front
-        -1.0f, 1.0f, 1.0f,
-        -1.0f,-1.0f, 1.0f,
-         1.0f,-1.0f, 1.0f,
-        -1.0f, 1.0f, 1.0f,
-         1.0f,-1.0f, 1.0f,
-         1.0f, 1.0f, 1.0f
+        -0.5f, 0.5f, 0.5f,
+        -0.5f,-0.5f, 0.5f,
+         0.5f,-0.5f, 0.5f,
+        -0.5f, 0.5f, 0.5f,
+         0.5f,-0.5f, 0.5f,
+         0.5f, 0.5f, 0.5f
     };
 
     vertexNormals = {
@@ -164,6 +164,7 @@ void Block::initGeometry()
     glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(GLfloat), 0);
     glEnableVertexAttribArray(2);
 
+    // deactivate the VAO for now
     glBindVertexArray(0);
 }
 
@@ -172,12 +173,13 @@ void Block::render(const GLuint program, glm::mat4 transMat, const GLuint textur
     // send uniform values to shaders
     glUniformMatrix4fv(glGetUniformLocation(program, "transMat"), 1, GL_FALSE, glm::value_ptr(transMat));
     glUniform1f(glGetUniformLocation(program, "ambient"), ambient);
+    glUniform1i(glGetUniformLocation(program, "material.textureData"), 0);
     // bind the texture
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, texture);
     // draw 3D model
     glBindVertexArray(vao);
-    glDrawArrays(GL_TRIANGLES, 0, 36);
+    glDrawArrays(GL_TRIANGLES, 0, vertexPositions.size());
 }
 
 void Block::freeBuffer()

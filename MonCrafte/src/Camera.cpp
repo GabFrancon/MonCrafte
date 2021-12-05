@@ -6,14 +6,20 @@ Camera::Camera(glm::vec3 position, glm::vec3 front, glm::vec3 up) :
     updateCameraVectors();
 }
 
-void Camera::setAspectRatio(const float a)
+void Camera::setAspectRatio(GLFWwindow* window)
 {
-    aspectRatio = a; 
+    int width, height;
+    glfwGetWindowSize(window, &width, &height);
+    aspectRatio = static_cast<float>(width) / static_cast<float>(height);
 }
 
 glm::vec3 Camera::getPosition() const
 {
     return camPos;
+}
+glm::vec3 Camera::getViewDirection() const
+{
+    return camFront;
 }
 
 glm::mat4 Camera::computeViewMatrix() const
@@ -26,22 +32,31 @@ glm::mat4 Camera::computeProjectionMatrix() const
     return glm::perspective(glm::radians(fov), aspectRatio, near, far);
 }
 
-void Camera::updateCamPos(GLFWwindow* window, float deltaTime)
+void Camera::updateCamPos(GLFWwindow* window, float deltaTime, World world)
 {
     float cameraSpeed = playerVelociy * deltaTime;
+    glm::vec3 newPos = camPos;
 
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-        camPos += camFront * cameraSpeed;
-    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-        camPos -= camFront * cameraSpeed;
-    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-        camPos -= camRight * cameraSpeed;
-    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-        camPos += camRight * cameraSpeed;
-    if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
-        camPos += worldUp * cameraSpeed / 2;
-    if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
-        camPos -= worldUp * cameraSpeed / 2;
+        newPos += camFront * cameraSpeed;
+
+    else if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+        newPos -= camFront * cameraSpeed;
+
+    else if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+        newPos += camRight * cameraSpeed;
+
+    else if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+        newPos -= camRight * cameraSpeed;
+
+    else if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
+        newPos += worldUp * cameraSpeed / 2;
+
+    else if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
+        newPos -= worldUp * cameraSpeed / 2;
+
+    if (!world.intersect(newPos))
+        camPos = newPos;
 }
 
 void Camera::processMouseMoovement(float xoffset, float yoffset, GLboolean constrainPitch)
@@ -85,9 +100,10 @@ void Camera::updateCameraVectors()
     camUp = glm::normalize(glm::cross(camRight, camFront));
 }
 
-void Camera::render(GLFWwindow* window, const GLuint program, const float deltaTime)
-{
-    updateCamPos(window, deltaTime);
+void Camera::render(GLFWwindow* window, const GLuint program, const float deltaTime, World world)
+{   
+    updateCamPos(window, deltaTime, world);
+
     glUniformMatrix4fv(glGetUniformLocation(program, "viewMat"), 1, GL_FALSE, glm::value_ptr(computeViewMatrix()));
     glUniformMatrix4fv(glGetUniformLocation(program, "projMat"), 1, GL_FALSE, glm::value_ptr(computeProjectionMatrix()));
     glUniform3f(glGetUniformLocation(program, "camPos"), camPos[0], camPos[1], camPos[2]);

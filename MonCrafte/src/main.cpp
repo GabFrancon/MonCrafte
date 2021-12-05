@@ -22,29 +22,26 @@
 #include "Sphere.h"
 #include "Camera.h"
 #include "Light.h"
+#include "World.h"
 
 // general
 GLFWwindow* window = nullptr;
 GLuint program = 0;
 Camera camera;
 Light light;
+World world;
 
-// blocks
+// 3D meshes
 auto block = std::make_shared<Block>();
-std::vector<glm::vec3> blockPos = {
-glm::vec3(0.0f, 0.0f, 0.0f),
-glm::vec3(0.0f, 2.0f, 0.0f)
-};
-GLuint blockTexture = 0;
-
-// sun
 auto sun = std::make_shared<Sphere>();
+
+// textures
+GLuint blockTexture = 0;
 GLuint sunTexture = 0;
 
-
 // time
-float currentFrame = 0.f;  // Time of current frame
-float lastFrame    = 0.f;  // Time of last frame
+float currentFrame = 0.f;
+float lastFrame    = 0.f;
 
 // mouse
 float lastX;
@@ -54,7 +51,7 @@ bool firstMouse = true;
 // Executed each time the window is resized.
 void windowSizeCallback(GLFWwindow* window, int width, int height)
 {
-    camera.setAspectRatio(static_cast<float>(width) / static_cast<float>(height));
+    camera.setAspectRatio(window);
     glViewport(0, 0, (GLint)width, (GLint)height);
 }
 
@@ -89,6 +86,18 @@ void mouseCallback(GLFWwindow* window, double xpos, double ypos)
     camera.processMouseMoovement(xoffset, yoffset);
 }
 
+// Executed each time a mouse button is clicked.
+void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
+{
+    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
+    {
+        int selection = world.select(camera.getPosition(), camera.getViewDirection());
+        if (selection >= 0)
+            world.destroyBlock(selection);
+    }
+}
+
+
 // Executed each time a scroll is proceed.
 void scrollCallback(GLFWwindow* window, double xoffset, double yoffset)
 {
@@ -120,8 +129,8 @@ void initGLFW()
     glfwWindowHint(GLFW_RESIZABLE, GL_TRUE);
 
     // Create the window
-    size_t height = 1500;
-    size_t width = 900;
+    size_t height = 2000;
+    size_t width = 1400;
     window = glfwCreateWindow(height, width, "MonCrafte", nullptr, nullptr);
 
     if (!window)
@@ -138,6 +147,7 @@ void initGLFW()
     glfwSetWindowSizeCallback(window, windowSizeCallback);
     glfwSetKeyCallback(window, keyCallback);
     glfwSetCursorPosCallback(window, mouseCallback);
+    glfwSetMouseButtonCallback(window, mouseButtonCallback);
     glfwSetScrollCallback(window, scrollCallback);
     glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
 }
@@ -184,8 +194,6 @@ void initGPUprogram()
     program = glCreateProgram();
     loadShader(program, GL_VERTEX_SHADER, "shader/vertexShader.glsl");
     loadShader(program, GL_FRAGMENT_SHADER, "shader/fragmentShader.glsl");
-
-    glUniform1i(glGetUniformLocation(program, "material.textureData"), 0);
     glLinkProgram(program);
     glUseProgram(program);
 }
@@ -224,19 +232,20 @@ GLuint loadTextureFromFileToGPU(const std::string& filename)
 void update()
 {
     float time = 2 * M_PI * currentFrame;
-    light.setPos( glm::vec3(5 * std::cos(time / 5), 5 * std::sin(time / 3), 5 * std::sin(time / 5)));
+    light.setPos( glm::vec3(6 * std::cos(time / 10), 6 * std::sin(time / 10), 0.0));
 }
 
 void render()
 {
     // render camera
-    camera.render(window, program, currentFrame - lastFrame);
+    camera.render(window, program, currentFrame - lastFrame, world);
     // render light
-    light.render(program);
-    sun->render(program, glm::translate(glm::mat4(1.0f), light.getPos()), sunTexture);
-    // render each block
-    for (unsigned int i = 0; i < blockPos.size(); i++)
-        block->render(program, glm::translate(glm::mat4(1.0f), blockPos[i]), blockTexture);
+    light.render(program, sunTexture, sun);
+    // render world
+    world.render(program, blockTexture, block);
+
+    glm::mat4 model = glm::scale(glm::translate(glm::mat4(1.0f), camera.getPosition() + camera.getViewDirection()), glm::vec3(0.02));
+    block->render(program, model, sunTexture);
 }
 
 void clear()
@@ -250,30 +259,37 @@ void clear()
 
 int main()
 {
-    // initialize openGL environment
     initGLFW();
     initOpenGL();
     initGPUprogram();
 
+    // setup the world
+    world = World();
+    world.addBlock(glm::vec3( 0.0f, 0.0f, 0.0f));
+    world.addBlock(glm::vec3( 1.0f, 0.0f, 0.0f));
+    world.addBlock(glm::vec3(-1.0f, 0.0f, 0.0f));
+    world.addBlock(glm::vec3( 0.0f, 0.0f, 1.0f));
+    world.addBlock(glm::vec3( 0.0f, 0.0f,-1.0f));
+    world.addBlock(glm::vec3(-1.0f, 0.0f,-1.0f));
+    world.addBlock(glm::vec3(-1.0f, 0.0f, 1.0f));
+    world.addBlock(glm::vec3( 1.0f, 0.0f,-1.0f));
+    world.addBlock(glm::vec3( 1.0f, 0.0f, 1.0f));
+
     // setup the camera
     camera = Camera(
-        glm::vec3(0.0, 0.0, 5.0),   // initial position
+        glm::vec3(0.0, 1.0, 0.0),   // initial position
         glm::vec3(0.0, 0.0, -1.0),  // front vector
         glm::vec3(0.0, 1.0, 0.0));  // up vector
-    int width, height;
-    glfwGetWindowSize(window, &width, &height);
-    camera.setAspectRatio(static_cast<float>(width) / static_cast<float>(height));
+    camera.setAspectRatio(window);
 
     // setup the light
     light = Light(
-        glm::vec3(5.0, 2.0, 0.0),   // initial position
+        glm::vec3(6.0, 6.0, 6.0),   // initial position
         glm::vec3(1.0, 1.0, 1.0));  // color
 
-    // create some blocks
+    // setup 3D geometry and texture
     block->initGeometry();
     blockTexture = loadTextureFromFileToGPU("texture/brick.png");
-
-    // create sun
     sun->initGeometry();
     sunTexture = loadTextureFromFileToGPU("texture/light.jpg");
     

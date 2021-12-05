@@ -8,6 +8,10 @@
 
 #include <glm/glm.hpp>
 #include <glm/ext.hpp>
+
+#ifndef SPHERE_H
+#define SPHERE_H
+
 class Sphere
 {
 private:
@@ -32,4 +36,8 @@ public:
 
 	float getAmbient() { return ambient; }
 };
+
+#endif // !SPHERE_H
+
+
 

@@ -4,6 +4,7 @@ void Sphere::initGeometry()
 {
     int accuracy = 50;
     float step = 1 / (float)accuracy;
+
     for (int i = 0; i < accuracy + 1; i++)
     {
         for (int j = 0; j < accuracy + 1; j++)
@@ -86,6 +87,7 @@ void Sphere::render(const GLuint program, glm::mat4 transMat, const GLuint textu
     // send uniform values to shaders
     glUniformMatrix4fv(glGetUniformLocation(program, "transMat"), 1, GL_FALSE, glm::value_ptr(transMat));
     glUniform1f(glGetUniformLocation(program, "ambient"), ambient);
+    glUniform1i(glGetUniformLocation(program, "material.textureData"), 0);
     // bind the texture
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, texture);

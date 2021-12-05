@@ -10,6 +10,9 @@
 #include <glm/glm.hpp>
 #include <glm/ext.hpp>
 
+#ifndef BLOCK_H
+#define BLOCK_H
+
 class Block
 {
 private:
@@ -32,4 +35,6 @@ public:
 
 	float getAmbient() { return ambient; }
 };
+
+#endif // !BLOCK_H
 
