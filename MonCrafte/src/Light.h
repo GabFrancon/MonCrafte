@@ -13,15 +13,22 @@ class Light
 {
 private:
 	glm::vec3 lightPos;
+	glm::vec3 lightSize;
 	glm::vec3 lightColor;
+	std::shared_ptr<Sphere> geometry;
+	GLuint texture = 0;
+	float ambient = 2;
 
 public:
 	Light() {};
-	Light(glm::vec3 position, glm::vec3 color);
+	Light(std::shared_ptr<Sphere> geometry, glm::vec3 pos, glm::vec3 color, GLuint texID);
 
-	glm::vec3 getPos();
-	void setPos(glm::vec3 position);
-	void render(const GLuint program, const GLuint texture, std::shared_ptr<Sphere> sun);
+	glm::vec3 getPosition() {return lightPos;}
+	void setPosition(glm::vec3 position) {lightPos = position;}
+	void setSize(float coeff) { lightSize = glm::vec3(coeff); }
+
+	void render(const GLuint program);
+	void freeBuffer();
 };
 
 #endif // !LIGHT_H

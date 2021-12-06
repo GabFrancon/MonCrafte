@@ -1,6 +1,6 @@
 #include "Sphere.h"
 
-void Sphere::initGeometry()
+Sphere::Sphere()
 {
     int accuracy = 50;
     float step = 1 / (float)accuracy;
@@ -44,7 +44,10 @@ void Sphere::initGeometry()
             vertexIndices.push_back(current_point + accuracy + 2);
         }
     }
+};
 
+void Sphere::bindToGPU()
+{
     glGenVertexArrays(1, &vao);
     glBindVertexArray(vao);
 
@@ -82,25 +85,8 @@ void Sphere::initGeometry()
     glBindVertexArray(0);
 }
 
-void Sphere::render(const GLuint program, glm::mat4 transMat, const GLuint texture)
+void Sphere::drawGeometry()
 {
-    // send uniform values to shaders
-    glUniformMatrix4fv(glGetUniformLocation(program, "transMat"), 1, GL_FALSE, glm::value_ptr(transMat));
-    glUniform1f(glGetUniformLocation(program, "ambient"), ambient);
-    glUniform1i(glGetUniformLocation(program, "material.textureData"), 0);
-    // bind the texture
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, texture);
-    // draw 3D model
     glBindVertexArray(vao);
     glDrawElements(GL_TRIANGLES, vertexIndices.size(), GL_UNSIGNED_INT, 0);
-}
-
-void Sphere::freeBuffer()
-{
-    glDeleteVertexArrays(1, &vao);
-    glDeleteBuffers(1, &posVbo);
-    glDeleteBuffers(1, &norVbo);
-    glDeleteBuffers(1, &texVbo);
-    glDeleteBuffers(1, &indVbo);
 }

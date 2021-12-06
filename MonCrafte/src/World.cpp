@@ -1,49 +1,49 @@
 #include "World.h"
 
-void World::addBlock(glm::vec3 newBlock)
+void World::addBlock(glm::vec3 position, GLuint texture)
 {
-	blockPositions.push_back(newBlock);
+	blocks.push_back(std::make_shared<Block>(cube, position, texture));
 }
 
-void World::addBlock(int blockID, int faceID)
+void World::addBlock(int blockID, int faceID, GLuint texture)
 {
-	glm::vec3  newBlock = blockPositions[blockID];
+	glm::vec3  position = blocks[blockID]->getPosition();
 	switch (faceID)
 	{
 	case 0:
-		newBlock += glm::vec3(0.0, 0.0, 1.0);
+		position += glm::vec3(0.0, 0.0, 1.0);
 		break;
 	case 1:
-		newBlock -= glm::vec3(0.0, 0.0, 1.0);
+		position -= glm::vec3(0.0, 0.0, 1.0);
 		break;
 	case 2:
-		newBlock += glm::vec3(0.0, 1.0, 0.0);
+		position += glm::vec3(0.0, 1.0, 0.0);
 		break;
 	case 3:
-		newBlock -= glm::vec3(0.0, 1.0, 0.0);
+		position -= glm::vec3(0.0, 1.0, 0.0);
 		break;
 	case 4:
-		newBlock += glm::vec3(1.0, 0.0, 0.0);
+		position += glm::vec3(1.0, 0.0, 0.0);
 		break;
 	case 5:
-		newBlock -= glm::vec3(1.0, 0.0, 0.0);
+		position -= glm::vec3(1.0, 0.0, 0.0);
 		break;
 	default:
 		break;
 	}
-	addBlock(newBlock);
+	addBlock(position, texture);
 }
 
 void World::destroyBlock(unsigned int index)
 {
-	blockPositions.erase(blockPositions.begin() + index);
+	blocks.erase(blocks.begin() + index);
 }
 
 bool World::intersect(glm::vec3 cam)
 {
-	for (int i = 0; i < blockPositions.size(); i++)
+	for (int i = 0; i < blocks.size(); i++)
 	{
-		glm::vec3 block = blockPositions[i];
+		glm::vec3 block = blocks[i]->getPosition();
 
 		bool xAxis = (cam.x - 0.5 < block.x + 0.5) && (cam.x + 0.5 > block.x - 0.5);
 		bool yAxis = (cam.y - 0.5 < block.y + 0.5) && (cam.y + 0.5 > block.y - 0.5);
@@ -97,9 +97,9 @@ std::vector<int> World::select(glm::vec3 camPos, glm::vec3 lookAt)
 	int nearestFace = -1;
 	float minDist = 10;
 
-	for (int i = 0; i < blockPositions.size(); i++)
+	for (int i = 0; i < blocks.size(); i++)
 	{
-		glm::vec3 block = blockPositions[i];
+		glm::vec3 block = blocks[i]->getPosition();
 
 		float frontDist  = faceDistance(camPos, lookAt, block + glm::vec3(0.0, 0.0, 0.5), glm::vec3( 0.0, 0.0, 1.0));
 		float backDist   = faceDistance(camPos, lookAt, block - glm::vec3(0.0, 0.0, 0.5), glm::vec3( 0.0, 0.0,-1.0));
@@ -118,20 +118,40 @@ std::vector<int> World::select(glm::vec3 camPos, glm::vec3 lookAt)
 			nearestFace = std::distance(dist.begin(), minD);
 		}
 	}
+
 	if (nearestCube >= 0)
 	{
-		glm::vec3 selected = blockPositions[nearestCube];
-		std::cout << "x=" << selected.x << ", y=" << selected.y << ", z=" << selected.z << " - face " << nearestFace << " - dist " << minDist << "\n" << std::endl;
+		glm::vec3 selected = blocks[nearestCube]->getPosition();
+		std::cout
+			<< "x=" << selected.x
+			<< ", y=" << selected.y
+			<< ", z=" << selected.z
+			<< " - face " << nearestFace
+			<< " - dist " << minDist
+			<< "\n" << std::endl;
 	}
 	else
 		std::cout << "no cube selected\n" << std::endl;
 
-	std::vector<int> selection = { nearestCube, nearestFace };
+	int faceDist = std::round(minDist);
+	std::vector<int> selection = { nearestCube, nearestFace, faceDist };
 	return selection;
 }
 
-void World::render(const GLuint program, const GLuint texture, std::shared_ptr<Block> block)
+void World::bindToGPU()
 {
-	for (unsigned int i = 0; i < blockPositions.size(); i++)
-		block->render(program, glm::translate(glm::mat4(1.0f), blockPositions[i]), texture);
+	cube->bindToGPU();
+	sphere->bindToGPU();
+}
+
+void World::render(const GLuint program)
+{
+	for (unsigned int i = 0; i < blocks.size(); i++)
+		blocks[i]->render(program);
+}
+
+void World::clearBuffers()
+{
+	for (int i = 0 ; i < blocks.size() ; i++)
+		blocks[i]->freeBuffer();
 }

@@ -10,6 +10,7 @@
 #include <algorithm>
 
 #include "Block.h"
+#include "Light.h"
 
 #ifndef WORLD_H
 #define WORLD_H
@@ -17,20 +18,31 @@
 class World
 {
 private:
-	std::vector<glm::vec3> blockPositions;
+	// ground
+	std::vector<std::shared_ptr<Block>> blocks;
+
+	// 3D geometry
+	std::shared_ptr<Cube> cube;
+	std::shared_ptr<Sphere> sphere;
 
 public:
-	World() {};
+	World() : cube(std::make_shared<Cube>()), sphere(std::make_shared<Sphere>()) {};
 
-	void addBlock(glm::vec3 newBlock);
-	void addBlock(int blockID, int faceID);
+	std::shared_ptr<Cube> getCubeGeometry() { return cube; }
+	std::shared_ptr<Sphere> getSphereGeometry() { return sphere; }
+
+
+	void addBlock(glm::vec3 position, GLuint texture);
+	void addBlock(int blockID, int faceID, GLuint texture);
 	void destroyBlock(unsigned int index);
 
 	bool intersect(glm::vec3 camPosition);
 	std::vector<int> select(glm::vec3 camPos, glm::vec3 lookAt);
 	float faceDistance(glm::vec3 camPos, glm::vec3 lookAt, glm::vec3 point, glm::vec3 normal);
 
-	void render(const GLuint program, const GLuint texture, std::shared_ptr<Block> block);
+	void bindToGPU();
+	void render(const GLuint program);
+	void clearBuffers();
 };
 
 #endif // !WORLD_H

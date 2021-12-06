@@ -19,6 +19,7 @@
 #include <memory>
 
 #include "Block.h"
+#include "Cube.h"
 #include "Sphere.h"
 #include "Camera.h"
 #include "Light.h"
@@ -31,12 +32,11 @@ Camera camera;
 Light light;
 World world;
 
-// 3D meshes
-auto block = std::make_shared<Block>();
-auto sun = std::make_shared<Sphere>();
-
 // textures
-GLuint blockTexture = 0;
+GLuint brickTexture = 0;
+GLuint dirtTexture = 0;
+GLuint stoneTexture = 0;
+GLuint sandTexture = 0;
 GLuint sunTexture = 0;
 
 // time
@@ -99,17 +99,22 @@ void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
     }
     else if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS)
     {
-        std::vector<int> selection = world.select(camera.getPosition(), camera.getViewDirection());
-        int blockID = selection[0];
-        int faceID = selection[1];
-        if (blockID >= 0)
-            world.addBlock(blockID, faceID);
+        GLuint texture = camera.getCurrentTex();
+        if (texture != 0)
+        {
+            std::vector<int> selection = world.select(camera.getPosition(), camera.getViewDirection());
+            int blockID = selection[0];
+            int faceID = selection[1];
+            int faceDist = selection[2];
+            if ((blockID >= 0) && (faceDist >=2))
+                world.addBlock(blockID, faceID, texture);
+        }
     }
 }
 
 
 // Executed each time a scroll is proceed.
-void scrollCallback(GLFWwindow* window, double xoffset, double yoffset)
+void scrollCallback(GLFWwindow* window, double xoDffset, double yoffset)
 {
     camera.processMouseScroll(yoffset);
 }
@@ -242,7 +247,7 @@ GLuint loadTextureFromFileToGPU(const std::string& filename)
 void update()
 {
     float time = 2 * M_PI * currentFrame;
-    light.setPos( glm::vec3(6 * std::cos(time / 10), 6 * std::sin(time / 10), 0.0));
+    light.setPosition( glm::vec3(6 * std::cos(time / 10), 6 * std::sin(time / 10), 0.0));
 }
 
 void render()
@@ -250,18 +255,18 @@ void render()
     // render camera
     camera.render(window, program, currentFrame - lastFrame, world);
     // render light
-    light.render(program, sunTexture, sun);
+    light.render(program);
     // render world
-    world.render(program, blockTexture, block);
-
-    glm::mat4 model = glm::scale(glm::translate(glm::mat4(1.0f), camera.getPosition() + camera.getViewDirection()), glm::vec3(0.02));
-    block->render(program, model, sunTexture);
+    world.render(program);
+    // render central pointer
+    //glm::mat4 model = glm::scale(glm::translate(glm::mat4(1.0f), camera.getPosition() + camera.getViewDirection()), glm::vec3(0.01));
+    //sun->render(program, model, sunTexture);
 }
 
 void clear()
 {
-    block->freeBuffer();
-    sun->freeBuffer();
+    world.clearBuffers();
+    light.freeBuffer();
     glDeleteProgram(program);
     glfwDestroyWindow(window);
     glfwTerminate();
@@ -273,35 +278,49 @@ int main()
     initOpenGL();
     initGPUprogram();
 
+    // load textures
+    brickTexture = loadTextureFromFileToGPU("texture/brick.bmp");
+    stoneTexture = loadTextureFromFileToGPU("texture/stone.bmp");
+    dirtTexture  = loadTextureFromFileToGPU("texture/dirt.bmp");
+    sandTexture  = loadTextureFromFileToGPU("texture/sand.bmp");
+    sunTexture   = loadTextureFromFileToGPU("texture/light.bmp");
+
     // setup the world
     world = World();
-    world.addBlock(glm::vec3( 0.0f, 0.0f, 0.0f));
-    world.addBlock(glm::vec3( 1.0f, 0.0f, 0.0f));
-    world.addBlock(glm::vec3(-1.0f, 0.0f, 0.0f));
-    world.addBlock(glm::vec3( 0.0f, 0.0f, 1.0f));
-    world.addBlock(glm::vec3( 0.0f, 0.0f,-1.0f));
-    world.addBlock(glm::vec3(-1.0f, 0.0f,-1.0f));
-    world.addBlock(glm::vec3(-1.0f, 0.0f, 1.0f));
-    world.addBlock(glm::vec3( 1.0f, 0.0f,-1.0f));
-    world.addBlock(glm::vec3( 1.0f, 0.0f, 1.0f));
+    world.addBlock(glm::vec3( 0.0f, 0.0f, 0.0f), stoneTexture); // position + texture
+    world.addBlock(glm::vec3( 1.0f, 0.0f, 0.0f), dirtTexture);
+    world.addBlock(glm::vec3(-1.0f, 0.0f, 0.0f), stoneTexture);
+    world.addBlock(glm::vec3( 0.0f, 0.0f, 1.0f), sandTexture);
+    world.addBlock(glm::vec3( 0.0f, 0.0f,-1.0f), dirtTexture);
+    world.addBlock(glm::vec3(-1.0f, 0.0f,-1.0f), sandTexture);
+    world.addBlock(glm::vec3(-1.0f, 0.0f, 1.0f), stoneTexture);
+    world.addBlock(glm::vec3( 1.0f, 0.0f,-1.0f), dirtTexture);
+    world.addBlock(glm::vec3( 1.0f, 0.0f, 1.0f), sandTexture);
+    world.bindToGPU();
 
     // setup the camera
     camera = Camera(
+        world,
         glm::vec3(0.0, 1.0, 0.0),   // initial position
         glm::vec3(0.0, 0.0, -1.0),  // front vector
-        glm::vec3(0.0, 1.0, 0.0));  // up vector
+        glm::vec3(0.0, 1.0, 0.0),   // up vector
+        sunTexture);                // cursor texture
+
     camera.setAspectRatio(window);
+    camera.insertTex(dirtTexture,  0);
+    camera.insertTex(stoneTexture, 1);
+    camera.insertTex(sandTexture,  2);
+    camera.insertTex(brickTexture, 3);
 
     // setup the light
     light = Light(
+        world.getSphereGeometry(),
         glm::vec3(6.0, 6.0, 6.0),   // initial position
-        glm::vec3(1.0, 1.0, 1.0));  // color
+        glm::vec3(1.0, 1.0, 1.0),   // color
+        sunTexture);                // texture
 
-    // setup 3D geometry and texture
-    block->initGeometry();
-    blockTexture = loadTextureFromFileToGPU("texture/brick.png");
-    sun->initGeometry();
-    sunTexture = loadTextureFromFileToGPU("texture/light.jpg");
+    light.setSize(0.2);
+
     
     while (!glfwWindowShouldClose(window))
     {

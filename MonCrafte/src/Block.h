@@ -10,30 +10,30 @@
 #include <glm/glm.hpp>
 #include <glm/ext.hpp>
 
+#include <memory>
+#include "Cube.h"
+
 #ifndef BLOCK_H
 #define BLOCK_H
 
 class Block
 {
 private:
-	std::vector<float> vertexPositions;
-	std::vector<float> vertexNormals;
-	std::vector<float> vertexTextures;
-
-	GLuint vao = 0;
-	GLuint posVbo = 0;
-	GLuint norVbo = 0;
-	GLuint texVbo = 0;
-
+	std::shared_ptr<Cube> geometry;
+	glm::vec3 position;
+	glm::vec3 size;
+	GLuint texture = 0;
 	float ambient = 0.3;
 
 public:
-	Block() {};
-	void initGeometry();
-	void render(const GLuint program, glm::mat4 transMat, const GLuint texture);
-	void freeBuffer();
+	Block(std::shared_ptr<Cube> cube, glm::vec3 pos, GLuint texID);
 
-	float getAmbient() { return ambient; }
+	glm::vec3 getPosition() const {return position;};
+	void setPosition(glm::vec3 pos) { position = pos; }
+	void setSize(float coeff) { size = glm::vec3(coeff); }
+	void setTexture(GLuint tex) { texture = tex; }
+	void render(const GLuint program);
+	void freeBuffer();
 };
 
 #endif // !BLOCK_H

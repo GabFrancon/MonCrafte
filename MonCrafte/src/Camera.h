@@ -12,7 +12,7 @@ class Camera
 {
 public:
     Camera() {};
-    Camera(glm::vec3 position, glm::vec3 front, glm::vec3 up);
+    Camera(World world, glm::vec3 position, glm::vec3 front, glm::vec3 up, GLuint cursorTex);
 
     glm::vec3 getPosition() const;
     glm::vec3 getViewDirection() const;
@@ -26,6 +26,10 @@ public:
     void updateCameraVectors();
     void render(GLFWwindow* window, const GLuint program, const float deltaTime, World world);
 
+    void insertTex(GLuint texture, unsigned int position);
+    void removeTex(unsigned int position);
+    GLuint getCurrentTex() const;
+
 private:
     glm::vec3 camPos;
     glm::vec3 camFront;
@@ -33,7 +37,7 @@ private:
     glm::vec3 camRight;
     glm::vec3 worldUp;
 
-    float fov = 45.f;                   // field of view, in degrees
+    float scroll = 4.0f;
     float aspectRatio = 1.f;            // ratio between the width and the height of the image
     float mouseSensitivity = 0.05f;     // sensitivity coefficient of mouse movements
     float playerVelociy = 4.f;          // sensitivity coefficient of player deplacement
@@ -41,6 +45,11 @@ private:
     float far = 250.1f;                 // distance after which the geometry is excluded from the rasterization process
     float yaw = -90.f;                  // yaw euler angle
     float pitch = 0.f;                  // pitch euler angle
+
+    int currentTex = 0;
+    std::vector<GLuint> availableTex;
+    std::shared_ptr<Block> blockInHand;
+    std::shared_ptr<Light> cursor;
 };
 
 #endif // !CAMERA_H
