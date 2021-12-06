@@ -5,7 +5,7 @@ struct Material
 	sampler2D textureData;
 };
 uniform Material material;
-uniform float ambient;
+uniform vec3 lightCoeff;
 uniform vec3 camPos;
 uniform vec3 lightPos;
 uniform vec3 lightColor;
@@ -23,10 +23,12 @@ void main()
 	vec3 viewDir = normalize(camPos - fPos);
 	vec3 reflectDir = reflect(-lightDir, norm);
 
-	float diffuse = max(dot(norm, lightDir), 0.0);
-	float specular = 0.5 * pow(max(dot(viewDir, reflectDir), 0.0), 32);
+	float ambient  = lightCoeff.x;
+	float diffuse  = lightCoeff.y * max(dot(norm, lightDir), 0.0);
+	float specular = lightCoeff.z * 0.5 * pow(max(dot(viewDir, reflectDir), 0.0), 32);
+	float power    = (lightPos.x - fPos.x)*(lightPos.x - fPos.x)+(lightPos.y-fPos.y)*(lightPos.y-fPos.y)+(lightPos.z-fPos.z)*(lightPos.z-fPos.z);
 
-	vec4 resultLight = vec4( (ambient + diffuse + specular) * lightColor, 1.0);
+	vec4 resultLight = vec4( (ambient + diffuse + specular) * lightColor / (1+0.0005*power), 1.0);
 	vec4 resultTexture = texture(material.textureData, fTex);
 
 	FragColor = resultLight * resultTexture;

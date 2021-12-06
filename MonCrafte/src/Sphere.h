@@ -1,10 +1,7 @@
-#define _USE_MATH_DEFINES
-
-#include <vector>
-#include "Geometry.h"
-
 #ifndef SPHERE_H
 #define SPHERE_H
+
+#include "Geometry.h"
 
 class Sphere : public Geometry
 {
@@ -17,6 +14,8 @@ public:
 	void bindToGPU() override;
 	void drawGeometry() override;
 };
+
+typedef std::shared_ptr<Sphere> SpherePtr;
 
 #endif // !SPHERE_H
 

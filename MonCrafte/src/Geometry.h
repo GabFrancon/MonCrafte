@@ -1,14 +1,23 @@
+#ifndef GEOMETRY_H
+#define GEOMETRY_H
+
+#define _USE_MATH_DEFINES
+
+#include <algorithm>
 #include <vector>
 #include <memory>
 #include <cmath>
+#include <map>
+#include <random>
+#include <cstdlib>
+#include <iostream>
+#include <fstream>
+#include <sstream>
+
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
-
 #include <glm/glm.hpp>
 #include <glm/ext.hpp>
-
-#ifndef GEOMETRY_H
-#define GEOMETRY_H
 
 class Geometry
 {
@@ -36,4 +45,6 @@ public:
 	}
 };
 
-#endif
+typedef std::shared_ptr<Geometry> GeometryPtr;
+
+#endif // !GEOMETRY_H

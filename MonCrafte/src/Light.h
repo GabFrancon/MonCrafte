@@ -1,35 +1,27 @@
-#include <glad/glad.h>
-#include <GLFW/glfw3.h>
-#include <glm/glm.hpp>
-#include <glm/ext.hpp>
-
-#include<memory>
-#include "Sphere.h"
-
 #ifndef LIGHT_H
 #define LIGHT_H
 
-class Light
+#include "GameObject.h"
+#include "Sphere.h"
+
+class Light : public GameObject
 {
 private:
-	glm::vec3 lightPos;
-	glm::vec3 lightSize;
-	glm::vec3 lightColor;
-	std::shared_ptr<Sphere> geometry;
-	GLuint texture = 0;
-	float ambient = 2;
+	glm::vec3 color;
 
 public:
-	Light() {};
-	Light(std::shared_ptr<Sphere> geometry, glm::vec3 pos, glm::vec3 color, GLuint texID);
+	Light(SpherePtr sphere, glm::vec3 pos, float coeff, GLuint texID, glm::vec3 lightColor)
+		: GameObject(sphere, pos, coeff, texID, glm::vec3(2.0, 0.0, 0.0)), color(lightColor) {}
 
-	glm::vec3 getPosition() {return lightPos;}
-	void setPosition(glm::vec3 position) {lightPos = position;}
-	void setSize(float coeff) { lightSize = glm::vec3(coeff); }
-
-	void render(const GLuint program);
-	void freeBuffer();
+	void render(const GLuint program) override
+	{
+		glUniform3f(glGetUniformLocation(program, "lightColor"), color.x, color.y, color.z);
+		glUniform3f(glGetUniformLocation(program, "lightPos"), position.x, position.y, position.z);
+		GameObject::render(program);
+	}
 };
+
+typedef std::shared_ptr<Light> LightPtr;
 
 #endif // !LIGHT_H
 

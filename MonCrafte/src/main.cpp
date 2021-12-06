@@ -1,43 +1,16 @@
 #define _USE_MATH_DEFINES
-#include <iostream>
-#include <glad/glad.h>
-#include <GLFW/glfw3.h>
-
-#include <glm/glm.hpp>
-#include <glm/ext.hpp>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb/stb_image.h>
 
-#include <cstdlib>
-#include <iostream>
-#include <fstream>
-#include <sstream>
-#include <vector>
-#include <string>
-#include <cmath>
-#include <memory>
-
-#include "Block.h"
-#include "Cube.h"
-#include "Sphere.h"
-#include "Camera.h"
-#include "Light.h"
 #include "World.h"
+#include "Camera.h"
 
 // general
 GLFWwindow* window = nullptr;
 GLuint program = 0;
 Camera camera;
-Light light;
 World world;
-
-// textures
-GLuint brickTexture = 0;
-GLuint dirtTexture = 0;
-GLuint stoneTexture = 0;
-GLuint sandTexture = 0;
-GLuint sunTexture = 0;
 
 // time
 float currentFrame = 0.f;
@@ -107,7 +80,7 @@ void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
             int faceID = selection[1];
             int faceDist = selection[2];
             if ((blockID >= 0) && (faceDist >=2))
-                world.addBlock(blockID, faceID, texture);
+                world.addBlock(blockID, faceID, 1.0, texture);
         }
     }
 }
@@ -181,8 +154,47 @@ void initOpenGL()
     glEnable(GL_CULL_FACE); // Enables face culling (based on the orientation defined by the CW/CCW enumeration).
     glDepthFunc(GL_LESS);   // Specify the depth test for the z-buffer
     glEnable(GL_DEPTH_TEST);      // Enable the z-buffer test in the rasterization
-    glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+    glClearColor(21.f/255, 94.f/255, 135.f/255, 1.0f);
+
+    // for blending and transparency
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
+
+GLuint loadTextureFromFileToGPU(const std::string& filename, bool withAlpha = false)
+{
+    int width, height, numComponents;
+
+    // Loading the image in CPU memory using stb_image
+    unsigned char* data = stbi_load(
+        filename.c_str(),
+        &width, &height,
+        &numComponents,
+        0);
+
+    GLuint texID;
+    // creates a texture and upload the image data in GPU memory
+    glGenTextures(1, &texID);
+    glBindTexture(GL_TEXTURE_2D, texID);
+
+    // setup texture filtering option and repeat model
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+    // fills the GPU texture with the data stored in the CPU image
+    if (withAlpha)
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+    else
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+
+    // Freeing the now useless CPU memory
+    stbi_image_free(data);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    return texID;
+}
+
 
 // Loads the content of an ASCII file in a standard C++ string
 std::string file2String(const std::string& filename)
@@ -213,60 +225,25 @@ void initGPUprogram()
     glUseProgram(program);
 }
 
-GLuint loadTextureFromFileToGPU(const std::string& filename)
-{
-    int width, height, numComponents;
 
-    // Loading the image in CPU memory using stb_image
-    unsigned char* data = stbi_load(
-        filename.c_str(),
-        &width, &height,
-        &numComponents,
-        0);
-
-    GLuint texID;
-    // creates a texture and upload the image data in GPU memory
-    glGenTextures(1, &texID);
-    glBindTexture(GL_TEXTURE_2D, texID);
-
-    // setup texture filtering option and repeat model
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
-    // fills the GPU texture with the data stored in the CPU image
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-
-    // Freeing the now useless CPU memory
-    stbi_image_free(data);
-    glBindTexture(GL_TEXTURE_2D, 0);
-    return texID;
-}
 
 void update()
 {
     float time = 2 * M_PI * currentFrame;
-    light.setPosition( glm::vec3(6 * std::cos(time / 10), 6 * std::sin(time / 10), 0.0));
+    //world.getLight(0)->setPosition( glm::vec3(6 * std::cos(time / 10), 6 * std::sin(time / 10), 0.0));
 }
 
 void render()
 {
     // render camera
     camera.render(window, program, currentFrame - lastFrame, world);
-    // render light
-    light.render(program);
     // render world
     world.render(program);
-    // render central pointer
-    //glm::mat4 model = glm::scale(glm::translate(glm::mat4(1.0f), camera.getPosition() + camera.getViewDirection()), glm::vec3(0.01));
-    //sun->render(program, model, sunTexture);
 }
 
 void clear()
 {
     world.clearBuffers();
-    light.freeBuffer();
     glDeleteProgram(program);
     glfwDestroyWindow(window);
     glfwTerminate();
@@ -279,49 +256,44 @@ int main()
     initGPUprogram();
 
     // load textures
-    brickTexture = loadTextureFromFileToGPU("texture/brick.bmp");
-    stoneTexture = loadTextureFromFileToGPU("texture/stone.bmp");
-    dirtTexture  = loadTextureFromFileToGPU("texture/dirt.bmp");
-    sandTexture  = loadTextureFromFileToGPU("texture/sand.bmp");
-    sunTexture   = loadTextureFromFileToGPU("texture/light.bmp");
+    std::map<std::string, GLuint> textures;
+    textures["dirt"]       = loadTextureFromFileToGPU("texture/dirt.bmp");
+    textures["stone"]      = loadTextureFromFileToGPU("texture/stone.bmp");
+    textures["sand"]       = loadTextureFromFileToGPU("texture/sand.bmp");
+    textures["brick"]      = loadTextureFromFileToGPU("texture/brick.bmp");
+    textures["grass"]      = loadTextureFromFileToGPU("texture/grass.bmp");
+    textures["woodplanck"] = loadTextureFromFileToGPU("texture/woodplanck.bmp");
+    textures["gravel"]     = loadTextureFromFileToGPU("texture/gravek.bmp");
+    textures["leaves"]     = loadTextureFromFileToGPU("texture/leaves.png", true);
+    textures["water"]      = loadTextureFromFileToGPU("texture/water.png", true);
+    textures["wood"]       = loadTextureFromFileToGPU("texture/wood.bmp");
+    textures["sun"]        = loadTextureFromFileToGPU("texture/sun.bmp");
 
-    // setup the world
+    // setup the world (ground+light)
     world = World();
-    world.addBlock(glm::vec3( 0.0f, 0.0f, 0.0f), stoneTexture); // position + texture
-    world.addBlock(glm::vec3( 1.0f, 0.0f, 0.0f), dirtTexture);
-    world.addBlock(glm::vec3(-1.0f, 0.0f, 0.0f), stoneTexture);
-    world.addBlock(glm::vec3( 0.0f, 0.0f, 1.0f), sandTexture);
-    world.addBlock(glm::vec3( 0.0f, 0.0f,-1.0f), dirtTexture);
-    world.addBlock(glm::vec3(-1.0f, 0.0f,-1.0f), sandTexture);
-    world.addBlock(glm::vec3(-1.0f, 0.0f, 1.0f), stoneTexture);
-    world.addBlock(glm::vec3( 1.0f, 0.0f,-1.0f), dirtTexture);
-    world.addBlock(glm::vec3( 1.0f, 0.0f, 1.0f), sandTexture);
+    world.genWorld(textures);
     world.bindToGPU();
 
-    // setup the camera
+    // setup the camera (player)
     camera = Camera(
         world,
-        glm::vec3(0.0, 1.0, 0.0),   // initial position
+        window,
+        glm::vec3(0.0, 2.0, 0.0),   // position
         glm::vec3(0.0, 0.0, -1.0),  // front vector
         glm::vec3(0.0, 1.0, 0.0),   // up vector
-        sunTexture);                // cursor texture
+        textures["sun"]); // cursor texture
 
-    camera.setAspectRatio(window);
-    camera.insertTex(dirtTexture,  0);
-    camera.insertTex(stoneTexture, 1);
-    camera.insertTex(sandTexture,  2);
-    camera.insertTex(brickTexture, 3);
+    camera.insertTex(textures["dirt"], 0);
+    camera.insertTex(textures["stone"], 1);
+    camera.insertTex(textures["sand"], 2);
+    camera.insertTex(textures["brick"], 3);
+    camera.insertTex(textures["grass"], 4);
+    camera.insertTex(textures["woodplanck"], 5);
+    camera.insertTex(textures["gravel"], 6);
+    camera.insertTex(textures["leaves"], 7);
+    camera.insertTex(textures["water"], 8);
+    camera.insertTex(textures["wood"], 9);
 
-    // setup the light
-    light = Light(
-        world.getSphereGeometry(),
-        glm::vec3(6.0, 6.0, 6.0),   // initial position
-        glm::vec3(1.0, 1.0, 1.0),   // color
-        sunTexture);                // texture
-
-    light.setSize(0.2);
-
-    
     while (!glfwWindowShouldClose(window))
     {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);

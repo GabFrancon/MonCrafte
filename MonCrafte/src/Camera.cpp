@@ -1,15 +1,23 @@
 #include "Camera.h"
 
-Camera::Camera(World world, glm::vec3 position, glm::vec3 front, glm::vec3 up, GLuint cursorTex) :
+Camera::Camera(World world, GLFWwindow* window, glm::vec3 position, glm::vec3 front, glm::vec3 up, GLuint cursorTex) :
     camPos(position), camFront(front), camUp(up), worldUp(up), availableTex(std::vector<GLuint>(10, 0))
 {
+    setAspectRatio(window);
     updateCameraVectors();
 
-    blockInHand = std::make_shared<Block>(world.getCubeGeometry(), camPos + camFront / 4 - camRight / 9 - camUp / 12, 0);
-    blockInHand->setSize(0.1);
+    blockInHand = std::make_shared<Block>(
+        world.getCubeGeometry(), 
+        camPos + camFront / 4 - camRight / 9 - camUp / 12, 
+        0.1, 
+        0);
 
-    cursor = std::make_shared<Light>(world.getSphereGeometry(), camPos + camFront / 4, glm::vec3(1.0f), cursorTex);
-    cursor->setSize(0.002);
+    cursor = std::make_shared<Light>(
+        world.getSphereGeometry(), 
+        camPos + camFront / 4, 
+        0.002, 
+        cursorTex, 
+        glm::vec3(1.0f));
 }
 
 void Camera::setAspectRatio(GLFWwindow* window)
@@ -42,19 +50,23 @@ void Camera::updateCamPos(GLFWwindow* window, float deltaTime, World world)
 {
     float cameraSpeed = playerVelociy * deltaTime;
     glm::vec3 newPos = camPos;
+    glm::vec3 frontDir = glm::normalize(glm::vec3(camFront.x, 0.0, camFront.z));
+    glm::vec3 rightDir = camRight;
+    glm::vec3 upDir    = worldUp;
 
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-        newPos += glm::vec3(camFront.x, 0.0, camFront.z) * cameraSpeed;
-    else if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-        newPos -= glm::vec3(camFront.x, 0.0, camFront.z) * cameraSpeed;
-    else if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-        newPos += camRight * cameraSpeed;
-    else if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-        newPos -= camRight * cameraSpeed;
-    else if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
-        newPos += worldUp * cameraSpeed / 2;
-    else if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
-        newPos -= worldUp * cameraSpeed / 2;
+        newPos += frontDir * cameraSpeed;
+    if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
+        newPos -= frontDir * cameraSpeed;
+    if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
+        newPos += rightDir * cameraSpeed;
+    if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
+        newPos -= rightDir * cameraSpeed;
+    if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
+        newPos += upDir * cameraSpeed;
+    if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
+        newPos -= upDir * cameraSpeed;
+
     if (!world.intersect(newPos))
         camPos = newPos;
 }
@@ -90,7 +102,6 @@ void Camera::processMouseScroll(float yoffset)
 
 void Camera::updateCameraVectors()
 {
-    // calculate the new Front vector
     glm::vec3 front;
     front.x = std::cos(glm::radians(yaw)) * std::cos(glm::radians(pitch));
     front.y = std::sin(glm::radians(pitch));
@@ -108,9 +119,12 @@ void Camera::render(GLFWwindow* window, const GLuint program, const float deltaT
     glUniformMatrix4fv(glGetUniformLocation(program, "projMat"), 1, GL_FALSE, glm::value_ptr(computeProjectionMatrix()));
     glUniform3f(glGetUniformLocation(program, "camPos"), camPos[0], camPos[1], camPos[2]);
 
-    blockInHand->setPosition(camPos + camFront / 4 - camRight / 9 - camUp / 12);
-    blockInHand->setTexture(availableTex[currentTex]);
-    blockInHand->render(program);
+    if (availableTex[currentTex] != 0)
+    {
+        blockInHand->setPosition(camPos + camFront / 4 - camRight / 9 - camUp / 12);
+        blockInHand->setTexture(availableTex[currentTex]);
+        blockInHand->render(program);
+    }
 
     cursor->setPosition(camPos + camFront / 4);
     cursor->render(program);

@@ -1,18 +1,13 @@
-#include <glad/glad.h>
-#include <GLFW/glfw3.h>
-#include <glm/glm.hpp>
-#include <glm/ext.hpp>
-
-#include "World.h"
-
 #ifndef CAMERA_H
 #define CAMERA_H
+
+#include "World.h"
 
 class Camera
 {
 public:
     Camera() {};
-    Camera(World world, glm::vec3 position, glm::vec3 front, glm::vec3 up, GLuint cursorTex);
+    Camera(World world, GLFWwindow* window, glm::vec3 position, glm::vec3 front, glm::vec3 up, GLuint cursorTex);
 
     glm::vec3 getPosition() const;
     glm::vec3 getViewDirection() const;
@@ -48,8 +43,9 @@ private:
 
     int currentTex = 0;
     std::vector<GLuint> availableTex;
-    std::shared_ptr<Block> blockInHand;
-    std::shared_ptr<Light> cursor;
+
+    BlockPtr blockInHand;
+    LightPtr cursor;
 };
 
 #endif // !CAMERA_H
