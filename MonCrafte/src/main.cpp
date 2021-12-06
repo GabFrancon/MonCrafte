@@ -91,9 +91,19 @@ void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
 {
     if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
     {
-        int selection = world.select(camera.getPosition(), camera.getViewDirection());
-        if (selection >= 0)
-            world.destroyBlock(selection);
+        std::vector<int> selection = world.select(camera.getPosition(), camera.getViewDirection());
+        int blockID = selection[0];
+        int faceID  = selection[1];
+        if (blockID >= 0)
+            world.destroyBlock(blockID);
+    }
+    else if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS)
+    {
+        std::vector<int> selection = world.select(camera.getPosition(), camera.getViewDirection());
+        int blockID = selection[0];
+        int faceID = selection[1];
+        if (blockID >= 0)
+            world.addBlock(blockID, faceID);
     }
 }
 

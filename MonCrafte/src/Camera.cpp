@@ -38,23 +38,17 @@ void Camera::updateCamPos(GLFWwindow* window, float deltaTime, World world)
     glm::vec3 newPos = camPos;
 
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-        newPos += camFront * cameraSpeed;
-
+        newPos += glm::vec3(camFront.x, 0.0, camFront.z) * cameraSpeed;
     else if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-        newPos -= camFront * cameraSpeed;
-
+        newPos -= glm::vec3(camFront.x, 0.0, camFront.z) * cameraSpeed;
     else if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
         newPos += camRight * cameraSpeed;
-
     else if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
         newPos -= camRight * cameraSpeed;
-
     else if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
         newPos += worldUp * cameraSpeed / 2;
-
     else if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
         newPos -= worldUp * cameraSpeed / 2;
-
     if (!world.intersect(newPos))
         camPos = newPos;
 }

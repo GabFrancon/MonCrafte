@@ -7,6 +7,8 @@
 #include <iostream>
 #include <vector>
 #include<memory>
+#include <algorithm>
+
 #include "Block.h"
 
 #ifndef WORLD_H
@@ -20,10 +22,14 @@ private:
 public:
 	World() {};
 
-	void addBlock(glm::vec3 block);
+	void addBlock(glm::vec3 newBlock);
+	void addBlock(int blockID, int faceID);
 	void destroyBlock(unsigned int index);
+
 	bool intersect(glm::vec3 camPosition);
-	int select(glm::vec3 cam, glm::vec3 camDirection);
+	std::vector<int> select(glm::vec3 camPos, glm::vec3 lookAt);
+	float faceDistance(glm::vec3 camPos, glm::vec3 lookAt, glm::vec3 point, glm::vec3 normal);
+
 	void render(const GLuint program, const GLuint texture, std::shared_ptr<Block> block);
 };
 
