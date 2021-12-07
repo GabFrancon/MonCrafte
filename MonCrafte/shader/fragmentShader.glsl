@@ -3,6 +3,7 @@
 struct Material
 {
 	sampler2D textureData;
+	sampler2D textureSelect;
 };
 uniform Material material;
 uniform vec3 lightCoeff;
@@ -29,7 +30,7 @@ void main()
 	float power    = (lightPos.x - fPos.x)*(lightPos.x - fPos.x)+(lightPos.y-fPos.y)*(lightPos.y-fPos.y)+(lightPos.z-fPos.z)*(lightPos.z-fPos.z);
 
 	vec4 resultLight = vec4( (ambient + diffuse + specular) * lightColor / (1+0.0005*power), 1.0);
-	vec4 resultTexture = texture(material.textureData, fTex);
+	vec4 resultTexture = mix(texture(material.textureData, fTex), texture(material.textureSelect, fTex), 0.2);
 
 	FragColor = resultLight * resultTexture;
 } 

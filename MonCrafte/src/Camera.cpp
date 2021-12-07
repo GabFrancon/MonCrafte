@@ -1,7 +1,7 @@
 #include "Camera.h"
 
-Camera::Camera(World world, GLFWwindow* window, glm::vec3 position, glm::vec3 front, glm::vec3 up, GLuint cursorTex) :
-    camPos(position), camFront(front), camUp(up), worldUp(up), availableTex(std::vector<GLuint>(10, 0))
+Camera::Camera(World world, GLFWwindow* window, glm::vec3 position, glm::vec3 front, glm::vec3 up) :
+    camPos(position), camFront(front), camUp(up), worldUp(up), availableBlocks(std::vector<std::string>(10, "None"))
 {
     setAspectRatio(window);
     updateCameraVectors();
@@ -9,14 +9,16 @@ Camera::Camera(World world, GLFWwindow* window, glm::vec3 position, glm::vec3 fr
     blockInHand = std::make_shared<Block>(
         world.getCubeGeometry(), 
         camPos + camFront / 4 - camRight / 9 - camUp / 12, 
-        0.1, 
-        0);
+        0.1,
+        world.getTexture("selection+"),
+        0,
+        false);
 
     cursor = std::make_shared<Light>(
         world.getSphereGeometry(), 
         camPos + camFront / 4, 
         0.002, 
-        cursorTex, 
+        world.getTexture("light"), 
         glm::vec3(1.0f));
 }
 
@@ -35,16 +37,15 @@ glm::mat4 Camera::computeViewMatrix() const {return glm::lookAt(camPos, camPos +
 
 glm::mat4 Camera::computeProjectionMatrix() const {return glm::perspective(glm::radians(45.f), aspectRatio, near, far);}
 
-GLuint Camera::getCurrentTex() const { return availableTex[currentTex]; }
+std::string Camera::getCurrentBlock() const { return availableBlocks[currentBlock]; }
 
-void Camera::removeTex(unsigned int position) { availableTex.erase(availableTex.begin() + position); }
+void Camera::removeBlock(unsigned int position) { availableBlocks.erase(availableBlocks.begin() + position); }
 
-void Camera::insertTex(GLuint texture, unsigned int position)
+void Camera::insertBlock(std::string texName, unsigned int position)
 {
-    removeTex(position);
-    availableTex.insert(availableTex.begin() + position, texture); 
+    removeBlock(position);
+    availableBlocks.insert(availableBlocks.begin() + position, texName); 
 }
-
 
 void Camera::updateCamPos(GLFWwindow* window, float deltaTime, World world)
 {
@@ -97,7 +98,7 @@ void Camera::processMouseScroll(float yoffset)
     else if (scroll > 9.5f)
         scroll -= 9.5f;
     
-    currentTex = std::round(scroll);
+    currentBlock = std::round(scroll);
 }
 
 void Camera::updateCameraVectors()
@@ -119,10 +120,10 @@ void Camera::render(GLFWwindow* window, const GLuint program, const float deltaT
     glUniformMatrix4fv(glGetUniformLocation(program, "projMat"), 1, GL_FALSE, glm::value_ptr(computeProjectionMatrix()));
     glUniform3f(glGetUniformLocation(program, "camPos"), camPos[0], camPos[1], camPos[2]);
 
-    if (availableTex[currentTex] != 0)
+    if (availableBlocks[currentBlock] != "None")
     {
         blockInHand->setPosition(camPos + camFront / 4 - camRight / 9 - camUp / 12);
-        blockInHand->setTexture(availableTex[currentTex]);
+        blockInHand->setTexture(world.getTexture(availableBlocks[currentBlock]));
         blockInHand->render(program);
     }
 

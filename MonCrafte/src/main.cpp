@@ -63,26 +63,9 @@ void mouseCallback(GLFWwindow* window, double xpos, double ypos)
 void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
 {
     if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
-    {
-        std::vector<int> selection = world.select(camera.getPosition(), camera.getViewDirection());
-        int blockID = selection[0];
-        int faceID  = selection[1];
-        if (blockID >= 0)
-            world.destroyBlock(blockID);
-    }
+        world.destroyBlock();
     else if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS)
-    {
-        GLuint texture = camera.getCurrentTex();
-        if (texture != 0)
-        {
-            std::vector<int> selection = world.select(camera.getPosition(), camera.getViewDirection());
-            int blockID = selection[0];
-            int faceID = selection[1];
-            int faceDist = selection[2];
-            if ((blockID >= 0) && (faceDist >=2))
-                world.addBlock(blockID, faceID, 1.0, texture);
-        }
-    }
+        world.addBlock(camera.getCurrentBlock());
 }
 
 
@@ -154,7 +137,7 @@ void initOpenGL()
     glEnable(GL_CULL_FACE); // Enables face culling (based on the orientation defined by the CW/CCW enumeration).
     glDepthFunc(GL_LESS);   // Specify the depth test for the z-buffer
     glEnable(GL_DEPTH_TEST);      // Enable the z-buffer test in the rasterization
-    glClearColor(21.f/255, 94.f/255, 135.f/255, 1.0f);
+    glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 
     // for blending and transparency
     glEnable(GL_BLEND);
@@ -226,19 +209,18 @@ void initGPUprogram()
 }
 
 
-
 void update()
 {
     float time = 2 * M_PI * currentFrame;
-    //world.getLight(0)->setPosition( glm::vec3(6 * std::cos(time / 10), 6 * std::sin(time / 10), 0.0));
+    world.updateSelection(camera.getPosition(), camera.getViewDirection());
 }
 
 void render()
 {
+    // render world
+    world.render(program, camera.getPosition());
     // render camera
     camera.render(window, program, currentFrame - lastFrame, world);
-    // render world
-    world.render(program);
 }
 
 void clear()
@@ -263,36 +245,36 @@ int main()
     textures["brick"]      = loadTextureFromFileToGPU("texture/brick.bmp");
     textures["grass"]      = loadTextureFromFileToGPU("texture/grass.bmp");
     textures["woodplanck"] = loadTextureFromFileToGPU("texture/woodplanck.bmp");
-    textures["gravel"]     = loadTextureFromFileToGPU("texture/gravek.bmp");
-    textures["leaves"]     = loadTextureFromFileToGPU("texture/leaves.png", true);
-    textures["water"]      = loadTextureFromFileToGPU("texture/water.png", true);
+    textures["gravel"]     = loadTextureFromFileToGPU("texture/gravel.bmp");
+    textures["leaves+"]     = loadTextureFromFileToGPU("texture/leaves.png", true);
+    textures["water+"]      = loadTextureFromFileToGPU("texture/water.png", true);
     textures["wood"]       = loadTextureFromFileToGPU("texture/wood.bmp");
     textures["sun"]        = loadTextureFromFileToGPU("texture/sun.bmp");
+    textures["selection+"]  = loadTextureFromFileToGPU("texture/selection.png", true);
 
     // setup the world (ground+light)
-    world = World();
-    world.genWorld(textures);
+    world = World(textures);
+    world.genWorld();
     world.bindToGPU();
 
     // setup the camera (player)
     camera = Camera(
         world,
         window,
-        glm::vec3(0.0, 2.0, 0.0),   // position
-        glm::vec3(0.0, 0.0, -1.0),  // front vector
-        glm::vec3(0.0, 1.0, 0.0),   // up vector
-        textures["sun"]); // cursor texture
+        glm::vec3(0.0, 2.0, 0.0),  // position
+        glm::vec3(0.0, 0.0, -1.0), // front vector
+        glm::vec3(0.0, 1.0, 0.0)); // up vector
 
-    camera.insertTex(textures["dirt"], 0);
-    camera.insertTex(textures["stone"], 1);
-    camera.insertTex(textures["sand"], 2);
-    camera.insertTex(textures["brick"], 3);
-    camera.insertTex(textures["grass"], 4);
-    camera.insertTex(textures["woodplanck"], 5);
-    camera.insertTex(textures["gravel"], 6);
-    camera.insertTex(textures["leaves"], 7);
-    camera.insertTex(textures["water"], 8);
-    camera.insertTex(textures["wood"], 9);
+    camera.insertBlock("dirt", 0);
+    camera.insertBlock("stone", 1);
+    camera.insertBlock("sand", 2);
+    camera.insertBlock("brick", 3);
+    camera.insertBlock("grass", 4);
+    camera.insertBlock("woodplanck", 5);
+    camera.insertBlock("gravel", 6);
+    camera.insertBlock("leaves+", 7);
+    camera.insertBlock("water+", 8);
+    camera.insertBlock("wood", 9);
 
     while (!glfwWindowShouldClose(window))
     {
