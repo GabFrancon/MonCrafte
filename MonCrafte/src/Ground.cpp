@@ -12,7 +12,17 @@ Ground::Ground(int width, int height, int length, CubePtr cube) :
 	map(std::vector<std::vector<std::vector<BlockPtr>>>(width,
 		std::vector<std::vector<BlockPtr>>(height,
 			std::vector<BlockPtr>(length,
-				emptyBlock)))) {}
+				emptyBlock))))
+{
+	for (int x = 0; x < 2 * halfWidth; x++)
+	{
+		for (int y = 0; y < 2 * halfHeight; y++)
+		{
+			for (int z = 0; z < 2 * halfLength; z++)
+				map[x][y][z]->setPosition(toWorldCoordinates(x, y, z));
+		}
+	}
+}
 
 void Ground::addBlock(glm::vec3 position, GLuint texture, GLuint selectTex, bool transparency)
 {
@@ -20,6 +30,7 @@ void Ground::addBlock(glm::vec3 position, GLuint texture, GLuint selectTex, bool
 	{
 		std::vector<int> coords = toMapCoordinates(position);
 		map[coords[0]][coords[1]][coords[2]] = std::make_shared<Block>(cube, position, 1.0f, texture, selectTex, transparency);
+		setNeighbourRender(map[coords[0]][coords[1]][coords[2]]);
 	}
 }
 
@@ -75,6 +86,20 @@ void Ground::destroyBlock()
 	{
 		std::vector<int> coords = toMapCoordinates(selection);
 		map[coords[0]][coords[1]][coords[2]] = emptyBlock;
+		map[coords[0]][coords[1]][coords[2]]->setPosition(selection);
+
+		std::vector<BlockPtr> neighbours = getNeighbours(map[coords[0]][coords[1]][coords[2]]);
+		int count = 0;
+
+		for (BlockPtr block : neighbours)
+		{
+			if (block->getTexture() != 0)
+			{
+				block->setRendering(true);
+				count++;
+			}
+		}
+		std::cout << "solid neighbours : " << count << "\n" << std::endl;
 	}
 }
 
@@ -152,6 +177,55 @@ float Ground::faceDistance(glm::vec3 camPos, glm::vec3 lookAt, glm::vec3 point, 
 	return dist;
 }
 
+std::vector<BlockPtr> Ground::getNeighbours(BlockPtr block)
+{
+	std::vector<int> coords = toMapCoordinates(block->getPosition());
+	int x = coords[0];
+	int y = coords[1];
+	int z = coords[2];
+	std::vector<BlockPtr> neighbours;
+
+	if (x < 2 * halfWidth - 1)
+		neighbours.push_back(map[x + 1][y][z]);
+	if (x > 0)
+		neighbours.push_back(map[x - 1][y][z]);
+	if (y < 2 * halfHeight - 1)
+		neighbours.push_back(map[x][y + 1][z]);
+	if (y > 0)
+		neighbours.push_back(map[x][y - 1][z]);
+	if (z < 2 * halfLength - 1)
+		neighbours.push_back(map[x][y][z + 1]);
+	if (z > 0)
+		neighbours.push_back(map[x][y][z - 1]);
+
+	return neighbours;
+}
+
+
+void Ground::setNeighbourRender(BlockPtr block)
+{
+	std::vector<BlockPtr> neighbours = getNeighbours(block);
+	for (BlockPtr neighbour : neighbours)
+	{
+		if (neighbour->getTexture() != 0)
+		{
+			std::vector<BlockPtr> n = getNeighbours(neighbour);
+			neighbour->setRendering(false);
+			int count = 0;
+
+			for (BlockPtr item : n)
+			{
+				if (!item->beRendered() || item->isTransparent())
+				{
+					count++;
+					neighbour->setRendering(true);
+				}
+			}
+		}
+	}
+}
+
+
 void Ground::updateSelection(glm::vec3 camPos, glm::vec3 lookAt)
 {
 	bool found = false;
@@ -218,15 +292,17 @@ void Ground::genGround(std::map<std::string, GLuint> textures)
 
 void Ground::render(GLuint program, glm::vec3 camPos)
 {
+	int count = 0;
 	std::vector<BlockPtr> transparentBlocks;
-
 	for (int x = 0; x < 2*halfWidth; x++)
 	{
 		for (int y = 0; y < 2*halfHeight; y++)
 		{
 			for (int z = 0; z < 2*halfLength; z++)
-			{
-				if (map[x][y][z]->beRendered()) {
+			{				
+				if (map[x][y][z]->beRendered())
+				{
+					count++;
 					if (map[x][y][z]->isTransparent())
 						transparentBlocks.push_back(map[x][y][z]);
 					else
@@ -235,6 +311,8 @@ void Ground::render(GLuint program, glm::vec3 camPos)
 			}
 		}
 	}
+	std::cout << "total rendered blocks : " << count << "\n" << std::endl;
+
 	std::map<float, BlockPtr> sorted;
 	for (BlockPtr block : transparentBlocks)
 	{
@@ -259,11 +337,11 @@ void Ground::clearBuffers()
 	}
 }
 
-glm::vec3 Ground::toWorldCoordinates(std::vector<int> mapCoords)
+glm::vec3 Ground::toWorldCoordinates(int x, int y, int z)
 {
-	float posX = mapCoords[0] - halfWidth;
-	float posY = mapCoords[1] - halfHeight;
-	float posZ = mapCoords[2] - halfLength;
+	float posX = x - halfWidth;
+	float posY = y - halfHeight;
+	float posZ = z - halfLength;
 	return glm::vec3(posX, posY, posZ);
 }
 

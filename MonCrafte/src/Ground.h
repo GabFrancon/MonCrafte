@@ -15,6 +15,7 @@ public:
 
 	void selectObject(glm::vec3 position);
 	bool intersect(glm::vec3 cam);
+	void setNeighbourRender(BlockPtr block);
 
 	float faceDistance(glm::vec3 camPos, glm::vec3 lookAt, glm::vec3 point, glm::vec3 normal);
 	void updateSelection(glm::vec3 camPos, glm::vec3 lookAt);
@@ -24,7 +25,8 @@ public:
 	void clearBuffers();
 
 	bool isInMap(glm::vec3 position);
-	glm::vec3 toWorldCoordinates(std::vector<int> mapCoords);
+	std::vector<BlockPtr> getNeighbours(BlockPtr block);
+	glm::vec3 toWorldCoordinates(int x, int y, int z);
 	std::vector<int> toMapCoordinates(glm::vec3 worldCoords);
 
 
