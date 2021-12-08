@@ -9,10 +9,9 @@ Camera::Camera(World world, GLFWwindow* window, glm::vec3 position, glm::vec3 fr
     blockInHand = std::make_shared<Block>(
         world.getCubeGeometry(), 
         camPos + camFront / 4 - camRight / 9 - camUp / 12, 
-        0.1,
-        world.getTexture("selection+"),
-        0,
-        false);
+        world.getTexture("selection+"));
+
+    blockInHand->setSize(0.1);
 
     cursor = std::make_shared<Light>(
         world.getSphereGeometry(), 
@@ -68,7 +67,7 @@ void Camera::updateCamPos(GLFWwindow* window, float deltaTime, World world)
     if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
         newPos -= upDir * cameraSpeed;
 
-    if (!world.intersect(newPos))
+    if (!world.collide(newPos))
         camPos = newPos;
 }
 

@@ -16,7 +16,7 @@ void World::addBlock(glm::vec3 position, std::string texName)
 	if (texName != "None")
 	{
 		bool transparency = (texName.back() == '+');
-		ground.addBlock(position, getTexture(texName), getTexture("selection+"), transparency);
+		ground.addBlock(position, getTexture(texName), transparency);
 	}
 }
 
@@ -25,7 +25,7 @@ void World::addBlock(std::string texName)
 	if (texName != "None")
 	{
 		bool transparency = (texName.back() == '+');
-		ground.addBlock(getTexture(texName), getTexture("selection+"), transparency);
+		ground.addBlock(getTexture(texName), transparency);
 	}
 }
 
@@ -44,9 +44,9 @@ void World::destroyLight(unsigned int index)
 	lights.erase(lights.begin() + index);
 }
 
-bool World::intersect(glm::vec3 camPosition)
+bool World::collide(glm::vec3 camPosition)
 {
-	return ground.intersect(camPosition);
+	return ground.collideGround(camPosition);
 }
 
 void World::updateSelection(glm::vec3 camPos, glm::vec3 lookAt)
@@ -56,8 +56,7 @@ void World::updateSelection(glm::vec3 camPos, glm::vec3 lookAt)
 
 void World::genWorld()
 {
-	ground = Ground(10, 10, 10, cube);
-	ground.genGround(textures);
+	ground = Ground(10, 10, 10, cube, textures);
 
 	addLight(
 		glm::vec3(20.0, 20.0, -20.0),						  // position

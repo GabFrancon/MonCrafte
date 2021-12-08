@@ -1,7 +1,21 @@
 #include "GameObject.h"
 
-GameObject::GameObject(GeometryPtr geo, glm::vec3 pos, float coeff, GLuint texID, GLuint selTexID, glm::vec3 lightSettings, bool transparency)
-	: geometry(geo), position(pos), size(glm::vec3(coeff)), texture(texID), selectTexture(selTexID), lightCoeff(lightSettings), transparent(transparency) {}
+GameObject::GameObject(GeometryPtr geo, glm::vec3 pos, float coeff, GLuint texID, GLuint selTexID, glm::vec3 lightSettings, bool transparency, bool render)
+	: geometry(geo), position(pos), size(glm::vec3(coeff)), texture(texID), selectTexture(selTexID), lightCoeff(lightSettings), transparent(transparency), rendering(render) {}
+
+void GameObject::fillObject(GLuint texture, bool transparency)
+{
+    setTexture(texture);
+    setTransparency(transparency);
+    setRendering(true);
+}
+
+void GameObject::emptyObject()
+{
+    setTexture(0);
+    setTransparency(true);
+    setRendering(false);
+}
 
 void GameObject::render(const GLuint program)
 {

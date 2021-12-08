@@ -10,8 +10,8 @@ private:
 	glm::vec3 color;
 
 public:
-	Light(SpherePtr sphere, glm::vec3 pos, float coeff, GLuint texID, glm::vec3 lightColor, bool transparency=false)
-		: GameObject(sphere, pos, coeff, texID, 0, glm::vec3(2.0, 0.0, 0.0), transparency), color(lightColor) {}
+	Light(SpherePtr sphere, glm::vec3 pos, float coeff, GLuint texID, glm::vec3 lightColor, bool transparency=false, bool render=true)
+		: GameObject(sphere, pos, coeff, texID, 0, glm::vec3(2.0, 0.0, 0.0), transparency, render), color(lightColor) {}
 
 	Light() {}
 

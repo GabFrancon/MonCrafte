@@ -34,7 +34,7 @@ public:
 	void addLight(glm::vec3 position, float size, GLuint texture, glm::vec3 color);
 	void destroyLight(unsigned int index);
 
-	bool intersect(glm::vec3 camPosition);
+	bool collide(glm::vec3 camPosition);
 	void updateSelection(glm::vec3 camPos, glm::vec3 lookAt);
 	
 	void genWorld();

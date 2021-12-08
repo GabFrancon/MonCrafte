@@ -132,14 +132,17 @@ void initOpenGL()
         glfwTerminate();
         std::exit(EXIT_FAILURE);
     }
+    // culling parameters
+    glCullFace(GL_BACK);
+    glEnable(GL_CULL_FACE);
+    glFrontFace(GL_CCW);
 
-    glCullFace(GL_BACK); // Specifies the faces to cull (here the ones pointing away from the camera)
-    glEnable(GL_CULL_FACE); // Enables face culling (based on the orientation defined by the CW/CCW enumeration).
-    glDepthFunc(GL_LESS);   // Specify the depth test for the z-buffer
-    glEnable(GL_DEPTH_TEST);      // Enable the z-buffer test in the rasterization
+    // z-buffer parameters
+    glDepthFunc(GL_LESS);
+    glEnable(GL_DEPTH_TEST);
     glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
 
-    // for blending and transparency
+    // blending parameters
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }

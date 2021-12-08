@@ -1,42 +1,43 @@
 #include "Ground.h"
 
-Ground::Ground(int width, int height, int length, CubePtr cube) :
+Ground::Ground(int width, int height, int length, CubePtr cube, std::map<std::string, GLuint> textures) :
 	halfWidth(std::round(width / 2)),
 	halfHeight(std::round(height / 2)),
 	halfLength(std::round(length / 2)),
-	cube(cube),
 	isSelection(false),
 	selectedFace(-1),
-	distanceToSelection(0.0f),
-	emptyBlock(std::make_shared<Block>()),
-	map(std::vector<std::vector<std::vector<BlockPtr>>>(width,
-		std::vector<std::vector<BlockPtr>>(height,
-			std::vector<BlockPtr>(length,
-				emptyBlock))))
+	distanceToSelection(0.0f)
 {
+	map = std::vector<std::vector<std::vector<BlockPtr>>>(width, std::vector<std::vector<BlockPtr>>(height, std::vector<BlockPtr>(length, nullptr)));
+
 	for (int x = 0; x < 2 * halfWidth; x++)
 	{
 		for (int y = 0; y < 2 * halfHeight; y++)
 		{
 			for (int z = 0; z < 2 * halfLength; z++)
-				map[x][y][z]->setPosition(toWorldCoordinates(x, y, z));
+			{
+				if (y == 0)
+					map[x][y][z] = std::make_shared<Block>(cube, toWorldCoordinates(x, y, z), 1.0, textures["stone"], textures["selection+"], false);
+				else
+					map[x][y][z] = std::make_shared<Block>(cube, toWorldCoordinates(x, y, z), textures["selection+"]);
+			}
 		}
 	}
 }
 
-void Ground::addBlock(glm::vec3 position, GLuint texture, GLuint selectTex, bool transparency)
+void Ground::addBlock(glm::vec3 position, GLuint texture, bool transparency)
 {
 	if (isInMap(position))
 	{
 		std::vector<int> coords = toMapCoordinates(position);
-		map[coords[0]][coords[1]][coords[2]] = std::make_shared<Block>(cube, position, 1.0f, texture, selectTex, transparency);
+		map[coords[0]][coords[1]][coords[2]]->fillObject(texture, transparency);
 		setNeighbourRender(map[coords[0]][coords[1]][coords[2]]);
 	}
 }
 
-void Ground::addBlock(GLuint texture, GLuint selectTex, bool transparency)
+void Ground::addBlock(GLuint texture, bool transparency)
 {
-	if (isSelection && distanceToSelection>2.5f)
+	if (isSelection)
 	{
 		glm::vec3  position = selection;
 		switch (selectedFace)
@@ -62,7 +63,7 @@ void Ground::addBlock(GLuint texture, GLuint selectTex, bool transparency)
 		default:
 			break;
 		}
-		addBlock(position, texture, selectTex, transparency);
+		addBlock(position, texture, transparency);
 	}
 }
 
@@ -85,21 +86,20 @@ void Ground::destroyBlock()
 	if (isSelection && isInMap(selection))
 	{
 		std::vector<int> coords = toMapCoordinates(selection);
-		map[coords[0]][coords[1]][coords[2]] = emptyBlock;
-		map[coords[0]][coords[1]][coords[2]]->setPosition(selection);
+		map[coords[0]][coords[1]][coords[2]]->emptyObject();
 
 		std::vector<BlockPtr> neighbours = getNeighbours(map[coords[0]][coords[1]][coords[2]]);
 		int count = 0;
 
 		for (BlockPtr block : neighbours)
 		{
-			if (block->getTexture() != 0)
+			if (!block->isEmpty())
 			{
 				block->setRendering(true);
 				count++;
 			}
 		}
-		std::cout << "solid neighbours : " << count << "\n" << std::endl;
+		std::cout << "(del)" << count << " neighbours rendered\n" << std::endl;
 	}
 }
 
@@ -111,7 +111,29 @@ bool Ground::isInMap(glm::vec3 position)
 	return xAxis && yAxis && zAxis;
 }
 
-bool Ground::intersect(glm::vec3 cam)
+bool Ground::isOnBorders(glm::vec3 position)
+{
+	bool xAxis = -halfWidth == position.x || position.x == halfWidth - 1;
+	bool yAxis = -halfHeight == position.y || position.y == halfHeight - 1;
+	bool zAxis = -halfLength == position.z || position.z == halfLength - 1;
+	return xAxis || yAxis || zAxis;
+}
+
+bool Ground::collideObject(BlockPtr object, glm::vec3 position)
+{
+	if (object->isEmpty() || object->isTransparent())
+		return false;
+
+	glm::vec3 objPos = object->getPosition();
+	bool xAxis = (position.x - 0.4 < objPos.x + 0.4) && (position.x + 0.4 > objPos.x - 0.4);
+	bool yAxis = (position.y - 1.0 < objPos.y + 1.0) && (position.y + 1.0 > objPos.y - 1.0);
+	bool zAxis = (position.z - 0.4 < objPos.z + 0.4) && (position.z + 0.4 > objPos.z - 0.4);
+
+	return xAxis && yAxis && zAxis;
+
+}
+
+bool Ground::collideGround(glm::vec3 cam)
 {
 	std::vector<int> coords = toMapCoordinates(cam);
 	int minX = std::max(coords[0] - 2, 0);
@@ -125,16 +147,8 @@ bool Ground::intersect(glm::vec3 cam)
 		for (int y = minY; y < maxY; y++) {
 			for (int z = minZ; z < maxZ; z++)
 			{
-				if (map[x][y][z]->beRendered())
-				{
-					glm::vec3 block = map[x][y][z]->getPosition();
-					bool xAxis = (cam.x - 0.4 < block.x + 0.4) && (cam.x + 0.4 > block.x - 0.4);
-					bool yAxis = (cam.y - 1.0 < block.y + 1.0) && (cam.y + 1.0 > block.y - 1.0);
-					bool zAxis = (cam.z - 0.4 < block.z + 0.4) && (cam.z + 0.4 > block.z - 0.4);
-
-					if (xAxis && yAxis && zAxis)
-						return true;
-				}
+				if (collideObject(map[x][y][z], cam))
+					return true;
 			}
 		}
 	}
@@ -205,24 +219,36 @@ std::vector<BlockPtr> Ground::getNeighbours(BlockPtr block)
 void Ground::setNeighbourRender(BlockPtr block)
 {
 	std::vector<BlockPtr> neighbours = getNeighbours(block);
+	int j = 0;
+
 	for (BlockPtr neighbour : neighbours)
 	{
-		if (neighbour->getTexture() != 0)
+		if (!neighbour->isEmpty())
 		{
-			std::vector<BlockPtr> n = getNeighbours(neighbour);
-			neighbour->setRendering(false);
-			int count = 0;
-
-			for (BlockPtr item : n)
+			if (isOnBorders(neighbour->getPosition()) || block->isTransparent())
 			{
-				if (!item->beRendered() || item->isTransparent())
+				neighbour->setRendering(true);
+				j++;
+			}
+			else
+			{
+				std::vector<BlockPtr> n = getNeighbours(neighbour);
+				neighbour->setRendering(false);
+				int i = 0;
+				while (i < n.size())
 				{
-					count++;
-					neighbour->setRendering(true);
+					if (n[i]->isEmpty() || n[i]->isTransparent())
+					{
+						neighbour->setRendering(true);
+						j++;
+						break;
+					}
+					i++;
 				}
 			}
 		}
 	}
+	std::cout << "(add)" << j << " neighbours rendered\n" << std::endl;
 }
 
 
@@ -274,22 +300,6 @@ void Ground::updateSelection(glm::vec3 camPos, glm::vec3 lookAt)
 	distanceToSelection = minDist;
 }
 
-
-void Ground::genGround(std::map<std::string, GLuint> textures)
-{
-	for (int x = -halfWidth; x < halfWidth; x++)
-	{
-		for (int y = -halfHeight; y < halfHeight; y++)
-		{
-			for (int z = -halfLength; z < halfLength; z++)
-			{
-				if (y == 0)
-					addBlock(glm::vec3(x, y, z), textures["stone"], textures["selection+"]);
-			}
-		}
-	}
-}
-
 void Ground::render(GLuint program, glm::vec3 camPos)
 {
 	int count = 0;
@@ -311,7 +321,6 @@ void Ground::render(GLuint program, glm::vec3 camPos)
 			}
 		}
 	}
-	std::cout << "total rendered blocks : " << count << "\n" << std::endl;
 
 	std::map<float, BlockPtr> sorted;
 	for (BlockPtr block : transparentBlocks)
