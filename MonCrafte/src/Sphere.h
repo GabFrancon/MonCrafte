@@ -12,7 +12,7 @@ private:
 public:
 	Sphere();
 	void bindToGPU() override;
-	void drawGeometry() override;
+	void drawGeometry(std::map<std::string, bool> facesRendering) override;
 };
 
 typedef std::shared_ptr<Sphere> SpherePtr;

@@ -15,6 +15,8 @@ World world;
 // time
 float currentFrame = 0.f;
 float lastFrame    = 0.f;
+float lastTime = 0.0f;
+int nbFrames = 0;
 
 // mouse
 float lastX;
@@ -40,6 +42,7 @@ void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
     else if (action == GLFW_PRESS && key == GLFW_KEY_ESCAPE) {
         glfwSetWindowShouldClose(window, true);
     }
+    world.updateSelection(camera.getPosition(), camera.getViewDirection());
 }
 
 // Executed each time the mouse is mooved.
@@ -57,6 +60,7 @@ void mouseCallback(GLFWwindow* window, double xpos, double ypos)
     lastY = ypos;
 
     camera.processMouseMoovement(xoffset, yoffset);
+    world.updateSelection(camera.getPosition(), camera.getViewDirection());
 }
 
 // Executed each time a mouse button is clicked.
@@ -66,6 +70,8 @@ void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
         world.destroyBlock();
     else if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS)
         world.addBlock(camera.getCurrentBlock());
+
+    world.updateSelection(camera.getPosition(), camera.getViewDirection());
 }
 
 
@@ -78,7 +84,7 @@ void scrollCallback(GLFWwindow* window, double xoDffset, double yoffset)
 // Executed each time an exception is raised.
 void errorCallback(int error, const char* desc)
 {
-    std::cout << "Error " << error << ": " << desc << std::endl;
+    std::cerr << "Error " << error << ": " << desc << std::endl;
 }
 
 void initGLFW()
@@ -214,8 +220,15 @@ void initGPUprogram()
 
 void update()
 {
-    float time = 2 * M_PI * currentFrame;
-    world.updateSelection(camera.getPosition(), camera.getViewDirection());
+    // Measure speed
+
+    nbFrames++;
+    if (currentFrame - lastTime >= 1.0) { // If last prinf() was more than 1 sec ago
+        // printf and reset timer
+        printf("%f ms/frame\n", 1000.0 / double(nbFrames));
+        nbFrames = 0;
+        lastTime += 1.0;
+    }
 }
 
 void render()
@@ -264,7 +277,7 @@ int main()
     camera = Camera(
         world,
         window,
-        glm::vec3(0.0, 2.0, 0.0),  // position
+        glm::vec3(0.0, 3.0, 0.0),  // position
         glm::vec3(0.0, 0.0, -1.0), // front vector
         glm::vec3(0.0, 1.0, 0.0)); // up vector
 

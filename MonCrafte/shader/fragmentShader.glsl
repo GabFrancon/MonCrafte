@@ -27,9 +27,9 @@ void main()
 	float ambient  = lightCoeff.x;
 	float diffuse  = lightCoeff.y * max(dot(norm, lightDir), 0.0);
 	float specular = lightCoeff.z * 0.5 * pow(max(dot(viewDir, reflectDir), 0.0), 32);
-	float power    = (lightPos.x - fPos.x)*(lightPos.x - fPos.x)+(lightPos.y-fPos.y)*(lightPos.y-fPos.y)+(lightPos.z-fPos.z)*(lightPos.z-fPos.z);
+	//float power    = (lightPos.x - fPos.x)*(lightPos.x - fPos.x)+(lightPos.y-fPos.y)*(lightPos.y-fPos.y)+(lightPos.z-fPos.z)*(lightPos.z-fPos.z);
 
-	vec4 resultLight = vec4( (ambient + diffuse + specular) * lightColor / (1+0.0005*power), 1.0);
+	vec4 resultLight = vec4( (ambient + diffuse + specular) * lightColor, 1.0);
 	vec4 resultTexture = mix(texture(material.textureData, fTex), texture(material.textureSelect, fTex), 0.2);
 
 	FragColor = resultLight * resultTexture;

@@ -34,14 +34,14 @@ protected:
 public:
 	Geometry() {};
 	virtual void bindToGPU() = 0;
-	virtual void drawGeometry() = 0;
+	virtual void drawGeometry(std::map<std::string, bool> facesRendering) = 0;
 
 	void freeBuffer()
 	{
-		/*glDeleteVertexArrays(1, &vao);
+		glDeleteVertexArrays(1, &vao);
 		glDeleteBuffers(1, &posVbo);
 		glDeleteBuffers(1, &norVbo);
-		glDeleteBuffers(1, &texVbo);*/
+		glDeleteBuffers(1, &texVbo);
 	}
 };
 

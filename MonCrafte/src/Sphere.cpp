@@ -85,7 +85,7 @@ void Sphere::bindToGPU()
     glBindVertexArray(0);
 }
 
-void Sphere::drawGeometry()
+void Sphere::drawGeometry(std::map<std::string, bool> facesRendering)
 {
     glBindVertexArray(vao);
     glDrawElements(GL_TRIANGLES, vertexIndices.size(), GL_UNSIGNED_INT, 0);

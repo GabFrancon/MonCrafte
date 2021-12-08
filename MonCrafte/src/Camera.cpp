@@ -8,16 +8,17 @@ Camera::Camera(World world, GLFWwindow* window, glm::vec3 position, glm::vec3 fr
 
     blockInHand = std::make_shared<Block>(
         world.getCubeGeometry(), 
-        camPos + camFront / 4 - camRight / 9 - camUp / 12, 
-        world.getTexture("selection+"));
-
+        camPos + camFront / 4 - camRight / 9 - camUp / 12,
+        0,
+        world.getTexture("selection+"),
+        false);
     blockInHand->setSize(0.1);
 
     cursor = std::make_shared<Light>(
         world.getSphereGeometry(), 
         camPos + camFront / 4, 
         0.002, 
-        world.getTexture("light"), 
+        world.getTexture("sun"), 
         glm::vec3(1.0f));
 }
 
@@ -93,9 +94,9 @@ void Camera::processMouseScroll(float yoffset)
 {
     scroll -= yoffset;
     if (scroll < -0.5f)
-        scroll += 9.5f;
+        scroll = 10.f;
     else if (scroll > 9.5f)
-        scroll -= 9.5f;
+        scroll = 0.f;
     
     currentBlock = std::round(scroll);
 }
@@ -128,4 +129,5 @@ void Camera::render(GLFWwindow* window, const GLuint program, const float deltaT
 
     cursor->setPosition(camPos + camFront / 4);
     cursor->render(program);
+    
 }

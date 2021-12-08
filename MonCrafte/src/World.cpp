@@ -11,15 +11,6 @@ void World::bindToGPU()
 	sphere->bindToGPU();
 }
 
-void World::addBlock(glm::vec3 position, std::string texName)
-{
-	if (texName != "None")
-	{
-		bool transparency = (texName.back() == '+');
-		ground.addBlock(position, getTexture(texName), transparency);
-	}
-}
-
 void World::addBlock(std::string texName)
 {
 	if (texName != "None")
@@ -56,7 +47,7 @@ void World::updateSelection(glm::vec3 camPos, glm::vec3 lookAt)
 
 void World::genWorld()
 {
-	ground = Ground(10, 10, 10, cube, textures);
+	ground = Ground(25, 15, 25, cube, textures);
 
 	addLight(
 		glm::vec3(20.0, 20.0, -20.0),						  // position

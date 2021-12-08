@@ -27,7 +27,6 @@ public:
 	SpherePtr getSphereGeometry() { return sphere; }
 	GLuint getTexture(std::string name) { return textures[name]; }
 
-	void addBlock(glm::vec3 position, std::string texName);
 	void addBlock(std::string texName);
 	void destroyBlock();
 

@@ -172,8 +172,19 @@ void Cube::bindToGPU()
     glBindVertexArray(0);
 }
 
-void Cube::drawGeometry()
+void Cube::drawGeometry(std::map<std::string, bool> facesRendering)
 {
     glBindVertexArray(vao);
-    glDrawArrays(GL_TRIANGLES, 0, vertexPositions.size());
+    if(facesRendering["left"])
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+    if (facesRendering["right"])
+        glDrawArrays(GL_TRIANGLES, 6, 6);
+    if (facesRendering["bottom"])
+        glDrawArrays(GL_TRIANGLES, 12, 6);
+    if (facesRendering["top"])
+        glDrawArrays(GL_TRIANGLES, 18, 6);
+    if (facesRendering["back"])
+        glDrawArrays(GL_TRIANGLES, 24, 6);
+    if (facesRendering["front"])
+        glDrawArrays(GL_TRIANGLES, 30, 6);
 }

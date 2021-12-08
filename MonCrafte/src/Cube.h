@@ -8,7 +8,7 @@ class Cube : public Geometry
 public:
 	Cube();
 	void bindToGPU() override;
-	void drawGeometry() override;
+	void drawGeometry(std::map<std::string, bool> facesRendering) override;
 };
 
 typedef std::shared_ptr<Cube> CubePtr;
