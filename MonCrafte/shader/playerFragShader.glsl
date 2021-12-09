@@ -3,14 +3,12 @@
 struct Material
 {
 	sampler2D textureData;
-	sampler2D textureSelect;
 };
 uniform Material material;
 //uniform vec3 lightCoeff;
 //uniform vec3 camPos;
 //uniform vec3 lightPos;
 //uniform vec3 lightColor;
-uniform bool pointed;
 
 in vec3 fPos;
 //in vec3 fNor;
@@ -31,15 +29,7 @@ void main()
 	//float power    = (lightPos.x - fPos.x)*(lightPos.x - fPos.x)+(lightPos.y-fPos.y)*(lightPos.y-fPos.y)+(lightPos.z-fPos.z)*(lightPos.z-fPos.z);
 
 	//vec4 resultLight = vec4( (ambient + diffuse + specular) * lightColor, 1.0);
+	vec4 resultTexture = texture(material.textureData, fTex);
 
-	vec4 resultTexture;
-	if(pointed)
-	{
-		resultTexture = mix(texture(material.textureData, fTex), texture(material.textureSelect, fTex), 0.2);
-	}
-	else
-	{
-		resultTexture = texture(material.textureData, fTex);
-	}
 	FragColor = resultTexture;
 } 

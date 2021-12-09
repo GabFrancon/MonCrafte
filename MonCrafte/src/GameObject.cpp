@@ -15,25 +15,29 @@ void GameObject::emptyObject()
     setTransparency(true);
 }
 
-void GameObject::render(const GLuint program)
+void GameObject::render(Shader shader)
 {
     // send uniform values to shaders
     glm::mat4 model = glm::scale(glm::translate(glm::mat4(1.f), position), size);
-    glUniformMatrix4fv(glGetUniformLocation(program, "transMat"), 1, GL_FALSE, glm::value_ptr(model));
-    glUniform3f(glGetUniformLocation(program, "lightCoeff"), lightCoeff.x, lightCoeff.y, lightCoeff.z);
-    glUniform1i(glGetUniformLocation(program, "material.textureData"), 0);
-    glUniform1i(glGetUniformLocation(program, "material.textureSelect"), 1);
+    shader.setMat4("transMat", model);
+    shader.setBool("pointed", pointed);
+    //glUniform3f(glGetUniformLocation(program, "lightCoeff"), lightCoeff.x, lightCoeff.y, lightCoeff.z);
+
     // bind the texture
     glActiveTexture(GL_TEXTURE0);
     glBindTexture(GL_TEXTURE_2D, texture);
-    if (pointed)
-    {
-        glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, selectTexture);
-    }
-    else
-    {
-        glActiveTexture(GL_TEXTURE1);
-        glBindTexture(GL_TEXTURE_2D, texture);
-    }
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, selectTexture);
+}
+
+void GameObject::renderForPlayer(Shader shader)
+{
+    // send uniform values to shaders
+    glm::mat4 model = glm::scale(glm::translate(glm::mat4(1.f), position), size);
+    shader.setMat4("transMat", model);
+    //glUniform3f(glGetUniformLocation(program, "lightCoeff"), lightCoeff.x, lightCoeff.y, lightCoeff.z);
+
+    // bind the texture
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, texture);
 }

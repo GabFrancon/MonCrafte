@@ -19,7 +19,7 @@ public:
     void processMouseMoovement(float xoffset, float yoffset, GLboolean constrainPitch = true);
     void processMouseScroll(float yoffset);
     void updateCameraVectors();
-    void render(GLFWwindow* window, const GLuint program, const float deltaTime, World world);
+    void render(GLFWwindow* window, Shader worldShader, Shader playerShader, const float deltaTime, World world);
 
     void insertBlock(std::string texName, unsigned int position);
     void removeBlock(unsigned int position);
@@ -45,7 +45,6 @@ private:
     std::vector<std::string> availableBlocks;
 
     BlockPtr blockInHand;
-    LightPtr cursor;
 };
 
 #endif // !CAMERA_H

@@ -5,17 +5,22 @@
 
 #include "World.h"
 #include "Camera.h"
+#include "Text2D.h"
 
 // general
 GLFWwindow* window = nullptr;
 GLuint program = 0;
 Camera camera;
 World world;
+Text2D pointer;
+Shader worldShader;
+Shader playerShader;
+Shader textShader;
 
 // time
 float currentFrame = 0.f;
 float lastFrame    = 0.f;
-float lastTime = 0.0f;
+float lastTime = 0.f;
 int nbFrames = 0;
 
 // mouse
@@ -187,41 +192,29 @@ GLuint loadTextureFromFileToGPU(const std::string& filename, bool withAlpha = fa
     return texID;
 }
 
-
-// Loads the content of an ASCII file in a standard C++ string
-std::string file2String(const std::string& filename)
-{
-    std::ifstream t(filename.c_str());
-    std::stringstream buffer;
-    buffer << t.rdbuf();
-    return buffer.str();
-}
-
-void loadShader(GLuint program, GLenum type, const std::string& shaderFilename)
-{
-    GLuint shader = glCreateShader(type); // Create the shader, e.g., a vertex shader to be applied to every single vertex of a mesh
-    std::string shaderSourceString = file2String(shaderFilename); // Loads the shader source from a file to a C++ string
-    const GLchar* shaderSource = (const GLchar*)shaderSourceString.c_str(); // Interface the C++ string through a C pointer
-    glShaderSource(shader, 1, &shaderSource, NULL); // load the vertex shader code
-    glCompileShader(shader);
-    glAttachShader(program, shader);
-    glDeleteShader(shader);
-}
-
 void initGPUprogram()
 {
-    program = glCreateProgram();
-    loadShader(program, GL_VERTEX_SHADER, "shader/vertexShader.glsl");
-    loadShader(program, GL_FRAGMENT_SHADER, "shader/fragmentShader.glsl");
-    glLinkProgram(program);
-    glUseProgram(program);
+    worldShader = Shader("shader/vertexShader.glsl", "shader/fragmentShader.glsl");
+    playerShader = Shader("shader/playerVertexShader.glsl", "shader/playerFragShader.glsl");
+
+    textShader = Shader("shader/textVertexShader.glsl", "shader/textFragShader.glsl");
+    pointer.initText2D("@", 1, 388, 288, 35, loadTextureFromFileToGPU("texture/font2.png", true));
+ 
+    textShader.use();
+    textShader.setInt("material.textureData", 0);
+
+    worldShader.use();
+    worldShader.setInt("material.textureData", 0);
+    worldShader.setInt("material.textureSelect", 1);
+
+    playerShader.use();
+    playerShader.setInt("material.textureData", 0);
 }
 
 
 void update()
 {
     // Measure speed
-
     nbFrames++;
     if (currentFrame - lastTime >= 1.0) { // If last prinf() was more than 1 sec ago
         // printf and reset timer
@@ -234,14 +227,21 @@ void update()
 void render()
 {
     // render world
-    world.render(program, camera.getPosition());
+    worldShader.use();
+    world.render(worldShader, camera.getPosition());
+
     // render camera
-    camera.render(window, program, currentFrame - lastFrame, world);
+    camera.render(window, worldShader, playerShader, currentFrame - lastFrame, world);
+
+    // render text
+    textShader.use();
+    pointer.printText2D();
 }
 
 void clear()
 {
     world.clearBuffers();
+    pointer.cleanupText2D();
     glDeleteProgram(program);
     glfwDestroyWindow(window);
     glfwTerminate();

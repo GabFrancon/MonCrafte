@@ -3,13 +3,13 @@
 
 #include "Block.h"
 #include "Light.h"
-#include "Ground.h"
+#include "Chunk.h"
 
 class World
 {
 private:
 	// ground
-	Ground ground;
+	Chunk chunk;
 	CubePtr cube;
 
 	// light
@@ -38,7 +38,7 @@ public:
 	
 	void genWorld();
 	void bindToGPU();
-	void render(const GLuint program, glm::vec3 camPos);
+	void render(Shader shader, glm::vec3 camPos);
 	void clearBuffers();
 
 };

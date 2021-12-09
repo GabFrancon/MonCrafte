@@ -15,12 +15,18 @@ public:
 
 	Light() {}
 
-	void render(const GLuint program) override
+	void render(Shader shader) override
 	{
-		glUniform3f(glGetUniformLocation(program, "lightColor"), color.x, color.y, color.z);
-		glUniform3f(glGetUniformLocation(program, "lightPos"), position.x, position.y, position.z);
-		GameObject::render(program);
-		
+		//glUniform3f(glGetUniformLocation(program, "lightColor"), color.x, color.y, color.z);
+		//glUniform3f(glGetUniformLocation(program, "lightPos"), position.x, position.y, position.z);
+		GameObject::render(shader);
+		geometry->drawGeometry(std::map<std::string, bool>{});
+	}
+
+
+	void renderForPlayer(Shader shader) override
+	{
+		GameObject::renderForPlayer(shader);
 		geometry->drawGeometry(std::map<std::string, bool>{});
 	}
 };

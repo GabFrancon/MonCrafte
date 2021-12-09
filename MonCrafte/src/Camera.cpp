@@ -8,18 +8,11 @@ Camera::Camera(World world, GLFWwindow* window, glm::vec3 position, glm::vec3 fr
 
     blockInHand = std::make_shared<Block>(
         world.getCubeGeometry(), 
-        camPos + camFront / 4 - camRight / 9 - camUp / 12,
+        glm::vec3(0.f),
         0,
-        world.getTexture("selection+"),
+        0,
         false);
     blockInHand->setSize(0.1);
-
-    cursor = std::make_shared<Light>(
-        world.getSphereGeometry(), 
-        camPos + camFront / 4, 
-        0.002, 
-        world.getTexture("sun"), 
-        glm::vec3(1.0f));
 }
 
 void Camera::setAspectRatio(GLFWwindow* window)
@@ -35,7 +28,7 @@ glm::vec3 Camera::getViewDirection() const {return camFront;}
 
 glm::mat4 Camera::computeViewMatrix() const {return glm::lookAt(camPos, camPos + camFront, camUp);}
 
-glm::mat4 Camera::computeProjectionMatrix() const {return glm::perspective(glm::radians(45.f), aspectRatio, near, far);}
+glm::mat4 Camera::computeProjectionMatrix() const {return glm::perspective(glm::radians(65.f), aspectRatio, near, far);}
 
 std::string Camera::getCurrentBlock() const { return availableBlocks[currentBlock]; }
 
@@ -79,6 +72,7 @@ void Camera::processMouseMoovement(float xoffset, float yoffset, GLboolean const
 
     yaw += xoffset;
     pitch += yoffset;
+
     // make sure that when pitch is out of bounds, screen doesn't get flipped
     if (constrainPitch)
     {
@@ -94,9 +88,9 @@ void Camera::processMouseScroll(float yoffset)
 {
     scroll -= yoffset;
     if (scroll < -0.5f)
-        scroll = 10.f;
+        scroll += 9.4f;
     else if (scroll > 9.5f)
-        scroll = 0.f;
+        scroll -= 9.4f;
     
     currentBlock = std::round(scroll);
 }
@@ -113,21 +107,29 @@ void Camera::updateCameraVectors()
     camUp = glm::normalize(glm::cross(camRight, camFront));
 }
 
-void Camera::render(GLFWwindow* window, const GLuint program, const float deltaTime, World world)
+void Camera::render(GLFWwindow* window, Shader worldShader, Shader playerShader, const float deltaTime, World world)
 {   
     updateCamPos(window, deltaTime, world);
-    glUniformMatrix4fv(glGetUniformLocation(program, "viewMat"), 1, GL_FALSE, glm::value_ptr(computeViewMatrix()));
-    glUniformMatrix4fv(glGetUniformLocation(program, "projMat"), 1, GL_FALSE, glm::value_ptr(computeProjectionMatrix()));
-    glUniform3f(glGetUniformLocation(program, "camPos"), camPos[0], camPos[1], camPos[2]);
+    glm::mat4 viewMat = computeViewMatrix();
+    glm::mat4 projMat = computeProjectionMatrix();
 
-    if (availableBlocks[currentBlock] != "None")
-    {
-        blockInHand->setPosition(camPos + camFront / 4 - camRight / 9 - camUp / 12);
-        blockInHand->setTexture(world.getTexture(availableBlocks[currentBlock]));
-        blockInHand->render(program);
+    worldShader.use();
+    worldShader.setMat4("viewMat", viewMat);
+    worldShader.setMat4("projMat", projMat);
+    //worldShader.setVec3("camPos", camPos);
+
+    playerShader.use();
+    playerShader.setMat4("viewMat", viewMat);
+    playerShader.setMat4("projMat", projMat);
+    //playerShader.setVec3("camPos", camPos);
+
+    try {
+        if (availableBlocks[currentBlock] != "None")
+        {
+            blockInHand->setPosition(camPos + camFront / 4 - camRight / 6 - camUp / 7);
+            blockInHand->setTexture(world.getTexture(availableBlocks[currentBlock]));
+            blockInHand->renderForPlayer(playerShader);
+        }
     }
-
-    cursor->setPosition(camPos + camFront / 4);
-    cursor->render(program);
-    
+    catch (...) { std::cout << "failed to render player" << std::endl; }
 }

@@ -7,12 +7,13 @@ class GameObject
 {
 protected:
 	GeometryPtr geometry;
+	glm::vec3 lightCoeff;
 	glm::vec3 position;
 	glm::vec3 size;
+
 	GLuint texture = 0;
 	GLuint selectTexture = 0;
-	glm::vec3 lightCoeff;
-	//bool rendering = true;
+
 	bool pointed = false;
 	bool transparent = false;
 
@@ -35,7 +36,8 @@ public:
 
 	virtual void fillObject(GLuint texture, bool transparency);
 	virtual void emptyObject();
-	virtual void render(const GLuint program);
+	virtual void render(Shader shader);
+	virtual void renderForPlayer(Shader shader);
 
 	void freeBuffer() { geometry->freeBuffer(); }
 };

@@ -1,13 +1,13 @@
-#ifndef GROUND_H
-#define GROUND_H
+#ifndef CHUNK_H
+#define CHUNK_H
 
 #include "Block.h"
 
-class Ground
+class Chunk
 {
 public:
-	Ground() {};
-	Ground(int width, int height, int length, CubePtr cube, std::map<std::string, GLuint> textures);
+	Chunk() {};
+	Chunk(int width, int height, int length, CubePtr cube, std::map<std::string, GLuint> textures);
 
 	// coordinates
 	glm::vec3 toWorldCoordinates(int x, int y, int z);
@@ -25,7 +25,7 @@ public:
 	std::map<std::string, BlockPtr> getNeighbours(BlockPtr block);
 	void hideNeighboursFace(BlockPtr block);
 	void showNeighboursFace(BlockPtr block);
-	void render(GLuint program, glm::vec3 camPos);
+	void render(Shader shader, glm::vec3 camPos);
 	void clearBuffers();
 
 private:
@@ -42,4 +42,4 @@ private:
 };
 
 
-#endif // !GROUND_H
+#endif // !CHUNK_H

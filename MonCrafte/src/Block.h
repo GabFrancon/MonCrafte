@@ -43,11 +43,19 @@ public:
 		GameObject::emptyObject();
 	}
 
-	void render(GLuint program) override
+	void render(Shader shader) override
 	{
-		GameObject::render(program);
-		if(!isEmpty())
+		if (!isEmpty())
+		{
+			GameObject::render(shader);
 			geometry->drawGeometry(faceRendering);
+		}
+	}
+
+	void renderForPlayer(Shader shader) override
+	{
+		GameObject::renderForPlayer(shader);
+		geometry->drawGeometry(faceRendering);
 	}
 };
 

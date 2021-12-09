@@ -16,13 +16,13 @@ void World::addBlock(std::string texName)
 	if (texName != "None")
 	{
 		bool transparency = (texName.back() == '+');
-		ground.addBlock(getTexture(texName), transparency);
+		chunk.addBlock(getTexture(texName), transparency);
 	}
 }
 
 void World::destroyBlock()
 {
-	ground.destroyBlock();
+	chunk.destroyBlock();
 }
 
 void World::addLight(glm::vec3 position, float size, GLuint texture, glm::vec3 color)
@@ -37,17 +37,17 @@ void World::destroyLight(unsigned int index)
 
 bool World::collide(glm::vec3 camPosition)
 {
-	return ground.collideGround(camPosition);
+	return chunk.collideGround(camPosition);
 }
 
 void World::updateSelection(glm::vec3 camPos, glm::vec3 lookAt)
 {
-	ground.updateSelection(camPos, lookAt);
+	chunk.updateSelection(camPos, lookAt);
 }
 
 void World::genWorld()
 {
-	ground = Ground(25, 15, 25, cube, textures);
+	chunk = Chunk(16, 30, 16, cube, textures);
 
 	addLight(
 		glm::vec3(20.0, 20.0, -20.0),						  // position
@@ -56,12 +56,12 @@ void World::genWorld()
 		glm::vec3(255.f / 255, 255.f / 255, 255.f / 255));    // color
 }
 
-void World::render(const GLuint program, glm::vec3 camPos)
+void World::render(Shader shader, glm::vec3 camPos)
 {
 	for (int j = 0; j < lights.size(); j++)
-		lights[j]->render(program);
+		lights[j]->render(shader);
 
-	ground.render(program, camPos);
+	chunk.render(shader, camPos);
 }
 
 void World::clearBuffers()
@@ -69,5 +69,5 @@ void World::clearBuffers()
 	for (int j = 0; j < lights.size(); j++)
 		lights[j]->freeBuffer();
 
-	ground.clearBuffers();
+	chunk.clearBuffers();
 }
