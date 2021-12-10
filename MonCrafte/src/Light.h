@@ -1,33 +1,27 @@
 #ifndef LIGHT_H
 #define LIGHT_H
 
-#include "GameObject.h"
-#include "Sphere.h"
-
-class Light : public GameObject
+class Light
 {
 private:
+	glm::vec3 position;
 	glm::vec3 color;
 
 public:
-	Light(SpherePtr sphere, glm::vec3 pos, float coeff, GLuint texID, glm::vec3 lightColor, bool transparency=false)
-		: GameObject(sphere, pos, coeff, texID, 0, glm::vec3(2.0, 0.0, 0.0), transparency), color(lightColor) {}
+	Light(glm::vec3 pos, glm::vec3 lightColor)
+		: position(pos), color(lightColor) {}
 
 	Light() {}
 
-	void render(Shader shader) override
+	void bindLight(Shader worldShader, Shader playerShader)
 	{
-		//glUniform3f(glGetUniformLocation(program, "lightColor"), color.x, color.y, color.z);
-		//glUniform3f(glGetUniformLocation(program, "lightPos"), position.x, position.y, position.z);
-		GameObject::render(shader);
-		geometry->drawGeometry(std::map<std::string, bool>{});
-	}
+		worldShader.use();
+		worldShader.setVec3("lightPos", position);
+		worldShader.setVec3("lightColor", color);
 
-
-	void renderForPlayer(Shader shader) override
-	{
-		GameObject::renderForPlayer(shader);
-		geometry->drawGeometry(std::map<std::string, bool>{});
+		playerShader.use();
+		playerShader.setVec3("lightPos", position);
+		playerShader.setVec3("lightColor", color);
 	}
 };
 

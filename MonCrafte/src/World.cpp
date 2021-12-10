@@ -1,14 +1,17 @@
 #include "World.h"
 
-World::World(std::map<std::string, GLuint> textureCollection) :
+World::World(std::map<std::string, GLuint> textureCollection, GLuint skyTexture) :
 	cube(std::make_shared<Cube>()),
-	sphere(std::make_shared<Sphere>()),
-	textures(textureCollection) {}
+	textures(textureCollection),
+	skybox(Skybox(skyTexture))
+{
+	bindToGPU();
+}
 
 void World::bindToGPU()
 {
-	cube->bindToGPU();
-	sphere->bindToGPU();
+	cube->initBuffers();
+	skybox.initBuffers();
 }
 
 void World::addBlock(std::string texName)
@@ -25,9 +28,9 @@ void World::destroyBlock()
 	chunk.destroyBlock();
 }
 
-void World::addLight(glm::vec3 position, float size, GLuint texture, glm::vec3 color)
+void World::addLight(glm::vec3 position, glm::vec3 color)
 {
-	lights.push_back(std::make_shared<Light>(sphere, position, size, texture, color));
+	lights.push_back(std::make_shared<Light>(position, color));
 }
 
 void World::destroyLight(unsigned int index)
@@ -51,23 +54,25 @@ void World::genWorld()
 
 	addLight(
 		glm::vec3(20.0, 20.0, -20.0),						  // position
-		1.0,												  // size
-		textures["sun"],									  // texture
 		glm::vec3(255.f / 255, 255.f / 255, 255.f / 255));    // color
 }
 
-void World::render(Shader shader, glm::vec3 camPos)
+void World::bindLights(Shader groundShader, Shader playerShader)
 {
 	for (int j = 0; j < lights.size(); j++)
-		lights[j]->render(shader);
+		lights[j]->bindLight(groundShader, playerShader);
+}
 
-	chunk.render(shader, camPos);
+void World::render(Shader groundShader, Shader skyShader, glm::vec3 camPos)
+{
+	// render skybox
+	skybox.render(skyShader);
+
+	// render ground
+	chunk.render(groundShader, camPos);
 }
 
 void World::clearBuffers()
 {
-	for (int j = 0; j < lights.size(); j++)
-		lights[j]->freeBuffer();
-
 	chunk.clearBuffers();
 }

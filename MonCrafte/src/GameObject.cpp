@@ -1,41 +1,45 @@
 #include "GameObject.h"
 
-GameObject::GameObject(GeometryPtr geo, glm::vec3 pos, float coeff, GLuint texID, GLuint selTexID, glm::vec3 lightSettings, bool transparency)
-	: geometry(geo), position(pos), size(glm::vec3(coeff)), texture(texID), selectTexture(selTexID), lightCoeff(lightSettings), transparent(transparency) {}
+GameObject::GameObject(Type _type, glm::vec3 _position, GLuint _selectTexture, GLuint _texture, bool _transparent, float _size, glm::vec3 _lightCoeff)
+	: type(_type), position(_position), selectTexture(_selectTexture), texture(_texture), transparent(_transparent), size(glm::vec3(_size)), lightCoeff(_lightCoeff)
+{
+    updateTransMat();
+}
 
-void GameObject::fillObject(GLuint texture, bool transparency)
+void GameObject::fillObject(GLuint texture, bool transparent)
 {
     setTexture(texture);
-    setTransparency(transparency);
+    setTransparent(transparent);
+    type = Type::SOLID;
 }
 
 void GameObject::emptyObject()
 {
-    setTexture(0);
-    setTransparency(true);
+    type = Type::AIR;
 }
 
 void GameObject::render(Shader shader)
 {
-    // send uniform values to shaders
-    glm::mat4 model = glm::scale(glm::translate(glm::mat4(1.f), position), size);
-    shader.setMat4("transMat", model);
-    shader.setBool("pointed", pointed);
-    //glUniform3f(glGetUniformLocation(program, "lightCoeff"), lightCoeff.x, lightCoeff.y, lightCoeff.z);
+    if (!isEmpty())
+    {
+        // send uniform values to shaders
+        shader.setMat4("transMat", transMat);
+        shader.setBool("pointed", pointed);
+        shader.setVec3("lightCoeff", lightCoeff);
 
-    // bind the texture
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D, texture);
-    glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, selectTexture);
+        // bind the texture
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, texture);
+        glActiveTexture(GL_TEXTURE1);
+        glBindTexture(GL_TEXTURE_2D, selectTexture);
+    }
 }
 
 void GameObject::renderForPlayer(Shader shader)
 {
     // send uniform values to shaders
-    glm::mat4 model = glm::scale(glm::translate(glm::mat4(1.f), position), size);
-    shader.setMat4("transMat", model);
-    //glUniform3f(glGetUniformLocation(program, "lightCoeff"), lightCoeff.x, lightCoeff.y, lightCoeff.z);
+    shader.setMat4("transMat", transMat);
+    shader.setVec3("lightCoeff", lightCoeff);
 
     // bind the texture
     glActiveTexture(GL_TEXTURE0);

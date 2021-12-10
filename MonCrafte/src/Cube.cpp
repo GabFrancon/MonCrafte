@@ -138,7 +138,7 @@ Cube::Cube()
     };
 }
 
-void Cube::bindToGPU()
+void Cube::initBuffers()
 {
     // generate the VAO
     glGenVertexArrays(1, &vao);
@@ -153,12 +153,12 @@ void Cube::bindToGPU()
     glEnableVertexAttribArray(0);
 
     // normal coordinates
-    /*size_t normalBufferSize = sizeof(float) * vertexNormals.size();
+    size_t normalBufferSize = sizeof(float) * vertexNormals.size();
     glGenBuffers(1, &norVbo);
     glBindBuffer(GL_ARRAY_BUFFER, norVbo);
     glBufferData(GL_ARRAY_BUFFER, normalBufferSize, vertexNormals.data(), GL_DYNAMIC_READ);
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(1);*/
+    glEnableVertexAttribArray(1);
 
     // texture coordinates
     size_t textureBufferSize = sizeof(float) * vertexTextures.size();
@@ -172,10 +172,11 @@ void Cube::bindToGPU()
     glBindVertexArray(0);
 }
 
-void Cube::drawGeometry(std::map<std::string, bool> facesRendering)
+void Cube::draw(std::map<std::string, bool> facesRendering)
 {
-    glBindVertexArray(vao);
-    if(facesRendering["left"])
+    bindBuffers();
+
+    if (facesRendering["left"])
         glDrawArrays(GL_TRIANGLES, 0, 6);
     if (facesRendering["right"])
         glDrawArrays(GL_TRIANGLES, 6, 6);

@@ -11,8 +11,8 @@ private:
 
 public:
 	Sphere();
-	void bindToGPU() override;
-	void drawGeometry(std::map<std::string, bool> facesRendering) override;
+	void initBuffers() override;
+	void draw();
 };
 
 typedef std::shared_ptr<Sphere> SpherePtr;

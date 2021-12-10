@@ -46,7 +46,7 @@ Sphere::Sphere()
     }
 };
 
-void Sphere::bindToGPU()
+void Sphere::initBuffers()
 {
     glGenVertexArrays(1, &vao);
     glBindVertexArray(vao);
@@ -60,12 +60,12 @@ void Sphere::bindToGPU()
     glEnableVertexAttribArray(0);
 
     // normal coordinates
-    /*size_t normalBufferSize = sizeof(float) * vertexNormals.size();
+    size_t normalBufferSize = sizeof(float) * vertexNormals.size();
     glGenBuffers(1, &norVbo);
     glBindBuffer(GL_ARRAY_BUFFER, norVbo);
     glBufferData(GL_ARRAY_BUFFER, normalBufferSize, vertexNormals.data(), GL_DYNAMIC_READ);
     glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), 0);
-    glEnableVertexAttribArray(1);*/
+    glEnableVertexAttribArray(1);
 
     // texture coordinates
     size_t textureBufferSize = sizeof(float) * vertexTextures.size();
@@ -85,8 +85,8 @@ void Sphere::bindToGPU()
     glBindVertexArray(0);
 }
 
-void Sphere::drawGeometry(std::map<std::string, bool> facesRendering)
+void Sphere::draw()
 {
-    glBindVertexArray(vao);
+    bindBuffers();
     glDrawElements(GL_TRIANGLES, vertexIndices.size(), GL_UNSIGNED_INT, 0);
 }

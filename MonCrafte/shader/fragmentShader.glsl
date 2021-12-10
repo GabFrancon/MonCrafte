@@ -6,31 +6,31 @@ struct Material
 	sampler2D textureSelect;
 };
 uniform Material material;
-//uniform vec3 lightCoeff;
-//uniform vec3 camPos;
-//uniform vec3 lightPos;
-//uniform vec3 lightColor;
+uniform vec3 lightCoeff;
+uniform vec3 camPos;
+uniform vec3 lightPos;
+uniform vec3 lightColor;
 uniform bool pointed;
 
 in vec3 fPos;
-//in vec3 fNor;
+in vec3 fNor;
 in vec2 fTex;
 
 out vec4 FragColor;
 
 void main()
 {
-	//vec3 norm = normalize(fNor);
-	//vec3 lightDir = normalize(lightPos - fPos);
-	//vec3 viewDir = normalize(camPos - fPos);
-	//vec3 reflectDir = reflect(-lightDir, norm);
+	vec3 norm = normalize(fNor);
+	vec3 lightDir = normalize(lightPos - fPos);
+	vec3 viewDir = normalize(camPos - fPos);
+	vec3 reflectDir = reflect(-lightDir, norm);
 
-	//float ambient  = lightCoeff.x;
-	//float diffuse  = lightCoeff.y * max(dot(norm, lightDir), 0.0);
+	float ambient  = lightCoeff.x;
+	float diffuse  = lightCoeff.y * max(dot(norm, lightDir), 0.0);
 	//float specular = lightCoeff.z * 0.5 * pow(max(dot(viewDir, reflectDir), 0.0), 32);
 	//float power    = (lightPos.x - fPos.x)*(lightPos.x - fPos.x)+(lightPos.y-fPos.y)*(lightPos.y-fPos.y)+(lightPos.z-fPos.z)*(lightPos.z-fPos.z);
 
-	//vec4 resultLight = vec4( (ambient + diffuse + specular) * lightColor, 1.0);
+	vec4 resultLight = vec4( (ambient + diffuse) * lightColor, 1.0);
 
 	vec4 resultTexture;
 	if(pointed)
@@ -41,5 +41,5 @@ void main()
 	{
 		resultTexture = texture(material.textureData, fTex);
 	}
-	FragColor = resultTexture;
+	FragColor = resultLight * resultTexture;
 } 

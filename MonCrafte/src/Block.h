@@ -7,19 +7,18 @@
 class Block : public GameObject
 {
 private:
+	CubePtr geometry;
 	std::map<std::string, bool> faceRendering;
 
 public:
-	Block(CubePtr cube, glm::vec3 pos, GLuint texID, GLuint selTexID, bool transparency)
-		: GameObject(cube, pos, 1.0f, texID, selTexID, glm::vec3(0.3, 1.0, 0.5), transparency),
-		faceRendering{ {"right", true}, {"left", true}, {"top", true}, {"bottom", true}, {"front", true}, {"back", true} } {}
-
-	Block(CubePtr cube, glm::vec3 pos, GLuint selTexID)
-		: GameObject(cube, pos, 1.0f, 0, selTexID, glm::vec3(0.3, 1.0, 0.5), true),
-		faceRendering{ {"right", false}, {"left", false}, {"top", false}, {"bottom", false}, {"front", false}, {"back", false} } {}
+	Block(Type _type, CubePtr cube, glm::vec3 _position, GLuint _selectTexture = 0, GLuint _texture = 0, bool _transparent = 0)
+		: GameObject(_type, _position, _selectTexture, _texture, _transparent),
+		geometry(cube),
+		faceRendering{ {"right", !isEmpty()}, {"left",!isEmpty()}, {"top", !isEmpty()}, {"bottom", !isEmpty()}, {"front", !isEmpty()}, {"back", !isEmpty()} } {}
 
 	void setFaceRendering(std::string name, bool beRendered) { faceRendering[name] = beRendered; }
-	std::string getReverseFace(std::string name)
+
+	std::string getReversedFace(std::string name)
 	{
 		if (name == "right") return "left";
 		if (name == "left")  return "right";
@@ -48,15 +47,17 @@ public:
 		if (!isEmpty())
 		{
 			GameObject::render(shader);
-			geometry->drawGeometry(faceRendering);
+			geometry->draw(faceRendering);
 		}
 	}
 
 	void renderForPlayer(Shader shader) override
 	{
 		GameObject::renderForPlayer(shader);
-		geometry->drawGeometry(faceRendering);
+		geometry->draw(faceRendering);
 	}
+
+	void freeBuffer() { geometry->freeBuffers(); }
 };
 
 typedef std::shared_ptr<Block> BlockPtr;

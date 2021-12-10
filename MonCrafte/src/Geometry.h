@@ -5,8 +5,6 @@
 
 #include "Shader.h"
 
-
-
 class Geometry
 {
 protected:
@@ -21,10 +19,12 @@ protected:
 
 public:
 	Geometry() {};
-	virtual void bindToGPU() = 0;
-	virtual void drawGeometry(std::map<std::string, bool> facesRendering) = 0;
 
-	void freeBuffer()
+	virtual void initBuffers() = 0;
+
+	void bindBuffers() { glBindVertexArray(vao); }
+
+	void freeBuffers()
 	{
 		glDeleteVertexArrays(1, &vao);
 		glDeleteBuffers(1, &posVbo);

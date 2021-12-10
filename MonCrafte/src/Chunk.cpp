@@ -17,9 +17,9 @@ Chunk::Chunk(int width, int height, int length, CubePtr cube, std::map<std::stri
 			for (int z = 0; z < 2 * halfLength; z++)
 			{
 				if (y < 5)
-					map[x][y][z] = std::make_shared<Block>(cube, toWorldCoordinates(x, y, z), textures["stone"], textures["selection+"], false);
+					map[x][y][z] = std::make_shared<Block>(Type::SOLID, cube, toWorldCoordinates(x, y, z), textures["selection+"], textures["stone"]);
 				else
-					map[x][y][z] = std::make_shared<Block>(cube, toWorldCoordinates(x, y, z), textures["selection+"]);
+					map[x][y][z] = std::make_shared<Block>(Type::AIR, cube, toWorldCoordinates(x, y, z), textures["selection+"]);
 			}
 		}
 	}
@@ -95,12 +95,10 @@ bool Chunk::collideObject(BlockPtr object, glm::vec3 position)
 		return false;
 
 	glm::vec3 objPos = object->getPosition();
-	glm::vec3 pos = position;
-	if(objPos.y < position.y)
-		pos -= glm::vec3(0.0, 2.0, 0.0);
+	glm::vec3 pos = position - glm::vec3(0.f, 0.5f, 0.f);
 
 	bool xAxis = (pos.x - 0.4 < objPos.x + 0.4) && (pos.x + 0.4 > objPos.x - 0.4);
-	bool yAxis = (pos.y - 0.6 < objPos.y + 0.6) && (pos.y + 0.6 > objPos.y - 0.6);
+	bool yAxis = (pos.y - 0.9 < objPos.y + 0.1) && (pos.y + 0.6 > objPos.y - 0.6);
 	bool zAxis = (pos.z - 0.4 < objPos.z + 0.4) && (pos.z + 0.4 > objPos.z - 0.4);
 
 	return xAxis && yAxis && zAxis;
@@ -196,7 +194,7 @@ void Chunk::hideNeighboursFace(BlockPtr block)
 		for (auto& it : neighbours)
 		{
 			it.second->setFaceRendering(it.first, block->isTransparent() && !it.second->isTransparent() && !it.second->isEmpty());
-			block->setFaceRendering(block->getReverseFace(it.first), (!block->isTransparent() && it.second->isTransparent()) || it.second->isEmpty());
+			block->setFaceRendering(block->getReversedFace(it.first), (!block->isTransparent() && it.second->isTransparent()) || it.second->isEmpty());
 		}
 	}	
 }
@@ -262,6 +260,7 @@ void Chunk::updateSelection(glm::vec3 camPos, glm::vec3 lookAt)
 
 void Chunk::render(Shader shader, glm::vec3 camPos)
 {
+	shader.use();
 	int count = 0;
 	std::vector<BlockPtr> transparentBlocks;
 	for (int x = 0; x < 2*halfWidth; x++)

@@ -2,28 +2,33 @@
 #define CAMERA_H
 
 #include "World.h"
+#include "Text2D.h"
 
 class Camera
 {
 public:
     Camera() {};
-    Camera(World world, GLFWwindow* window, glm::vec3 position, glm::vec3 front, glm::vec3 up);
+    Camera(World world, glm::vec3 position, glm::vec3 front, glm::vec3 up, GLuint pointerTexture);
 
     glm::vec3 getPosition() const;
     glm::vec3 getViewDirection() const;
     glm::mat4 computeViewMatrix() const;
-    glm::mat4 computeProjectionMatrix() const;
+    void updateProjectionMatrix();
 
     void setAspectRatio(GLFWwindow* window);
     void updateCamPos(GLFWwindow* window, float deltaTime, World world);
     void processMouseMoovement(float xoffset, float yoffset, GLboolean constrainPitch = true);
     void processMouseScroll(float yoffset);
     void updateCameraVectors();
-    void render(GLFWwindow* window, Shader worldShader, Shader playerShader, const float deltaTime, World world);
+
+    void bindView(Shader worldShader, Shader playerShader, Shader skyShader);
+    void bindProjection(Shader worldShader, Shader playerShader, Shader skyShader);
+    void render(Shader playerShader, Shader pointerShader, World world);
 
     void insertBlock(std::string texName, unsigned int position);
     void removeBlock(unsigned int position);
     std::string getCurrentBlock() const;
+    void clearBuffers();
 
 private:
     glm::vec3 camPos;
@@ -43,8 +48,10 @@ private:
 
     int currentBlock = 0;
     std::vector<std::string> availableBlocks;
+    glm::mat4 projMat;
 
     BlockPtr blockInHand;
+    Text2D pointer;
 };
 
 #endif // !CAMERA_H

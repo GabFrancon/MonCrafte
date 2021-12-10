@@ -5,17 +5,18 @@
 
 #include "World.h"
 #include "Camera.h"
-#include "Text2D.h"
 
 // general
 GLFWwindow* window = nullptr;
 GLuint program = 0;
 Camera camera;
 World world;
-Text2D pointer;
+
+// shaders
 Shader worldShader;
 Shader playerShader;
-Shader textShader;
+Shader pointerShader;
+Shader skyShader;
 
 // time
 float currentFrame = 0.f;
@@ -32,6 +33,7 @@ bool firstMouse = true;
 void windowSizeCallback(GLFWwindow* window, int width, int height)
 {
     camera.setAspectRatio(window);
+    camera.bindProjection(worldShader, playerShader, skyShader);
     glViewport(0, 0, (GLint)width, (GLint)height);
 }
 
@@ -192,16 +194,50 @@ GLuint loadTextureFromFileToGPU(const std::string& filename, bool withAlpha = fa
     return texID;
 }
 
-void initGPUprogram()
+GLuint loadCubemap(std::vector<std::string> faces, bool withAlpha = false)
 {
-    worldShader = Shader("shader/vertexShader.glsl", "shader/fragmentShader.glsl");
-    playerShader = Shader("shader/playerVertexShader.glsl", "shader/playerFragShader.glsl");
+    GLuint textureID;
+    glGenTextures(1, &textureID);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
 
-    textShader = Shader("shader/textVertexShader.glsl", "shader/textFragShader.glsl");
-    pointer.initText2D("@", 1, 388, 288, 35, loadTextureFromFileToGPU("texture/font2.png", true));
- 
-    textShader.use();
-    textShader.setInt("material.textureData", 0);
+    int width, height, nrChannels;
+    for (unsigned int i = 0; i < faces.size(); i++)
+    {
+        unsigned char* data = stbi_load(faces[i].c_str(), &width, &height, &nrChannels, 0);
+        if (data)
+        {
+            if (withAlpha)
+                glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
+                    0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+            else
+                glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
+                    0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+            stbi_image_free(data);
+        }
+        else
+        {
+            std::cout << "Cubemap tex failed to load at path: " << faces[i] << std::endl;
+            stbi_image_free(data);
+        }
+    }
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+    return textureID;
+}
+
+void setupShaders()
+{
+    worldShader   = Shader("shader/vertexShader.glsl", "shader/fragmentShader.glsl");
+    playerShader  = Shader("shader/playerVertexShader.glsl", "shader/playerFragShader.glsl");
+    pointerShader = Shader("shader/textVertexShader.glsl", "shader/textFragShader.glsl");
+    skyShader     = Shader("shader/skyboxVertexShader.glsl", "shader/skyboxFragShader.glsl");
+
+    pointerShader.use();
+    pointerShader.setInt("material.textureData", 0);
 
     worldShader.use();
     worldShader.setInt("material.textureData", 0);
@@ -209,6 +245,11 @@ void initGPUprogram()
 
     playerShader.use();
     playerShader.setInt("material.textureData", 0);
+
+    skyShader.use();
+    skyShader.setInt("cubemap", 0);
+
+    camera.bindProjection(worldShader, playerShader, skyShader);
 }
 
 
@@ -216,7 +257,7 @@ void update()
 {
     // Measure speed
     nbFrames++;
-    if (currentFrame - lastTime >= 1.0) { // If last prinf() was more than 1 sec ago
+    if ((double)currentFrame - lastTime >= 1.0) { // If last prinf() was more than 1 sec ago
         // printf and reset timer
         printf("%f ms/frame\n", 1000.0 / double(nbFrames));
         nbFrames = 0;
@@ -226,22 +267,22 @@ void update()
 
 void render()
 {
+    camera.updateCamPos(window, currentFrame - lastFrame, world);
+    camera.bindView(worldShader, playerShader, skyShader);
+    world.bindLights(worldShader, playerShader);
+
     // render world
-    worldShader.use();
-    world.render(worldShader, camera.getPosition());
+    world.render(worldShader, skyShader, camera.getPosition());
 
     // render camera
-    camera.render(window, worldShader, playerShader, currentFrame - lastFrame, world);
-
-    // render text
-    textShader.use();
-    pointer.printText2D();
+    camera.render(playerShader, pointerShader, world);
 }
 
 void clear()
 {
     world.clearBuffers();
-    pointer.cleanupText2D();
+    camera.clearBuffers();
+  
     glDeleteProgram(program);
     glfwDestroyWindow(window);
     glfwTerminate();
@@ -251,7 +292,6 @@ int main()
 {
     initGLFW();
     initOpenGL();
-    initGPUprogram();
 
     // load textures
     std::map<std::string, GLuint> textures;
@@ -262,24 +302,33 @@ int main()
     textures["grass"]      = loadTextureFromFileToGPU("texture/grass.bmp");
     textures["woodplanck"] = loadTextureFromFileToGPU("texture/woodplanck.bmp");
     textures["gravel"]     = loadTextureFromFileToGPU("texture/gravel.bmp");
-    textures["leaves+"]     = loadTextureFromFileToGPU("texture/leaves.png", true);
-    textures["water+"]      = loadTextureFromFileToGPU("texture/water.png", true);
+    textures["leaves+"]    = loadTextureFromFileToGPU("texture/leaves.png", true);
+    textures["water+"]     = loadTextureFromFileToGPU("texture/water.png", true);
     textures["wood"]       = loadTextureFromFileToGPU("texture/wood.bmp");
     textures["sun"]        = loadTextureFromFileToGPU("texture/sun.bmp");
-    textures["selection+"]  = loadTextureFromFileToGPU("texture/selection.png", true);
+    textures["selection+"] = loadTextureFromFileToGPU("texture/selection.png", true);
 
-    // setup the world (ground+light)
-    world = World(textures);
+    std::vector<std::string> faces = {
+    "texture/skybox/default/right.bmp",
+    "texture/skybox/default/left.bmp",
+    "texture/skybox/default/top.bmp",
+    "texture/skybox/default/bottom.bmp",
+    "texture/skybox/default/front.bmp",
+    "texture/skybox/default/back.bmp" };
+
+    // setup the world (ground + light)
+    world = World(textures, loadCubemap(faces));
     world.genWorld();
-    world.bindToGPU();
 
-    // setup the camera (player)
+    // setup the camera (player + pointer)
     camera = Camera(
         world,
-        window,
         glm::vec3(0.0, 3.0, 0.0),  // position
         glm::vec3(0.0, 0.0, -1.0), // front vector
-        glm::vec3(0.0, 1.0, 0.0)); // up vector
+        glm::vec3(0.0, 1.0, 0.0),  // up vector
+        loadTextureFromFileToGPU("texture/font2.png", true));
+
+    camera.setAspectRatio(window);
 
     camera.insertBlock("dirt", 0);
     camera.insertBlock("stone", 1);
@@ -291,6 +340,9 @@ int main()
     camera.insertBlock("leaves+", 7);
     camera.insertBlock("water+", 8);
     camera.insertBlock("wood", 9);
+
+    // finally send all the data to the shaders
+    setupShaders();
 
     while (!glfwWindowShouldClose(window))
     {

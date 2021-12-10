@@ -1,25 +1,27 @@
 #include "Camera.h"
 
-Camera::Camera(World world, GLFWwindow* window, glm::vec3 position, glm::vec3 front, glm::vec3 up) :
-    camPos(position), camFront(front), camUp(up), worldUp(up), availableBlocks(std::vector<std::string>(10, "None"))
+Camera::Camera(World world, glm::vec3 position, glm::vec3 front, glm::vec3 up, GLuint pointerTexture) :
+    camPos(position), camFront(front), camUp(up), worldUp(up), availableBlocks(std::vector<std::string>(10, "None")), pointer(Text2D("@", 1, 388, 288, 35, pointerTexture))
 {
-    setAspectRatio(window);
     updateCameraVectors();
 
     blockInHand = std::make_shared<Block>(
+        Type::SOLID,
         world.getCubeGeometry(), 
-        glm::vec3(0.f),
-        0,
-        0,
-        false);
+        glm::vec3(0.f));
+
     blockInHand->setSize(0.1);
+    pointer.initBuffers();
 }
+
+void Camera::clearBuffers() { pointer.freeBuffers(); }
 
 void Camera::setAspectRatio(GLFWwindow* window)
 {
     int width, height;
     glfwGetWindowSize(window, &width, &height);
     aspectRatio = static_cast<float>(width) / static_cast<float>(height);
+    updateProjectionMatrix();
 }
 
 glm::vec3 Camera::getPosition() const {return camPos;}
@@ -28,7 +30,7 @@ glm::vec3 Camera::getViewDirection() const {return camFront;}
 
 glm::mat4 Camera::computeViewMatrix() const {return glm::lookAt(camPos, camPos + camFront, camUp);}
 
-glm::mat4 Camera::computeProjectionMatrix() const {return glm::perspective(glm::radians(65.f), aspectRatio, near, far);}
+void Camera::updateProjectionMatrix() {projMat = glm::perspective(glm::radians(55.f), aspectRatio, near, far);}
 
 std::string Camera::getCurrentBlock() const { return availableBlocks[currentBlock]; }
 
@@ -107,22 +109,35 @@ void Camera::updateCameraVectors()
     camUp = glm::normalize(glm::cross(camRight, camFront));
 }
 
-void Camera::render(GLFWwindow* window, Shader worldShader, Shader playerShader, const float deltaTime, World world)
-{   
-    updateCamPos(window, deltaTime, world);
+void Camera::bindView(Shader worldShader, Shader playerShader, Shader skyShader)
+{
     glm::mat4 viewMat = computeViewMatrix();
-    glm::mat4 projMat = computeProjectionMatrix();
 
     worldShader.use();
     worldShader.setMat4("viewMat", viewMat);
-    worldShader.setMat4("projMat", projMat);
-    //worldShader.setVec3("camPos", camPos);
 
     playerShader.use();
     playerShader.setMat4("viewMat", viewMat);
-    playerShader.setMat4("projMat", projMat);
-    //playerShader.setVec3("camPos", camPos);
 
+    skyShader.use();
+    skyShader.setMat4("viewMat", glm::mat4(glm::mat3(viewMat)));
+}
+
+void Camera::bindProjection(Shader worldShader, Shader playerShader, Shader skyShader)
+{
+    worldShader.use();
+    worldShader.setMat4("projMat", projMat);
+
+    playerShader.use();
+    playerShader.setMat4("projMat", projMat);
+
+    skyShader.use();
+    skyShader.setMat4("projMat", projMat);
+}
+
+void Camera::render(Shader playerShader, Shader pointerShader, World world)
+{   
+    playerShader.use();
     try {
         if (availableBlocks[currentBlock] != "None")
         {
@@ -132,4 +147,6 @@ void Camera::render(GLFWwindow* window, Shader worldShader, Shader playerShader,
         }
     }
     catch (...) { std::cout << "failed to render player" << std::endl; }
+
+    pointer.render(pointerShader);
 }
