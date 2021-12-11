@@ -2,7 +2,6 @@
 #define CUBE_H
 
 #include "Geometry.h"
-#include "Texture.h"
 
 class Cube : public Geometry
 {

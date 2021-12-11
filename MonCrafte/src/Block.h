@@ -2,7 +2,6 @@
 #define BLOCK_H
 
 #include "GameObject.h"
-#include "Cube.h"
 
 class Block : public GameObject
 {

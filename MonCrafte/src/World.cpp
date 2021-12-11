@@ -14,6 +14,18 @@ void World::bindToGPU()
 	skybox.initBuffers();
 }
 
+void World::updateCurrentChunk(glm::vec3 camPos)
+{
+	int x = std::round(camPos.x / chunkSize.x);
+	int y = std::round(camPos.z / chunkSize.z);
+	if (x != currentChunk.x || y != currentChunk.y)
+	{
+		currentChunk = glm::ivec2(x, y);
+		std::cout << "current chunk : (" << x << ", " << y << ")\n" << std::endl;
+	}
+}
+
+
 void World::addBlock(std::string texName)
 {
 	if (texName != "None")
@@ -50,7 +62,7 @@ void World::updateSelection(glm::vec3 camPos, glm::vec3 lookAt)
 
 void World::genWorld()
 {
-	chunk = Chunk(16, 30, 16, cube, textures);
+	chunk = Chunk(glm::ivec2(1, 0), cube, textures);
 
 	addLight(
 		glm::vec3(20.0, 20.0, -20.0),						  // position

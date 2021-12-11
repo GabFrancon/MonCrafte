@@ -1,40 +1,60 @@
 #include "Chunk.h"
 
-Chunk::Chunk(int width, int height, int length, CubePtr cube, std::map<std::string, Texture> textures) :
-	halfWidth(std::round(width / 2)),
-	halfHeight(std::round(height / 2)),
-	halfLength(std::round(length / 2)),
+Chunk::Chunk(glm::ivec2 position, CubePtr geometry, std::map<std::string, Texture> textures) :
+	chunkPos(position),
 	isSelection(false),
 	selectedFace(-1),
 	distanceToSelection(0.0f)
 {
-	map = std::vector<std::vector<std::vector<BlockPtr>>>(width, std::vector<std::vector<BlockPtr>>(height, std::vector<BlockPtr>(length, nullptr)));
+	selection = toWorldCoord(glm::ivec3(0, 0, 0));
 
-	for (int x = 0; x < 2 * halfWidth; x++)
-	{
-		for (int y = 0; y < 2 * halfHeight; y++)
-		{
-			for (int z = 0; z < 2 * halfLength; z++)
-			{
+	map = std::vector<std::vector<std::vector<BlockPtr>>>(chunkSize.x, std::vector<std::vector<BlockPtr>>(chunkSize.y, std::vector<BlockPtr>(chunkSize.z, nullptr)));
+
+	for (int x = 0; x < chunkSize.x; x++) {
+		for (int y = 0; y < chunkSize.y; y++) {
+			for (int z = 0; z < chunkSize.z; z++) {
+				glm::ivec3 coords = glm::ivec3(x, y, z);
 				if (y < 5)
-					map[x][y][z] = std::make_shared<Block>(Type::SOLID, cube, toWorldCoordinates(x, y, z), textures["stone"]);
+					map[x][y][z] = std::make_shared<Block>(Type::SOLID, geometry, toWorldCoord(coords), textures["stone"]);
 				else if (y < 8)
-					map[x][y][z] = std::make_shared<Block>(Type::SOLID, cube, toWorldCoordinates(x, y, z), textures["dirt"]);
+					map[x][y][z] = std::make_shared<Block>(Type::SOLID, geometry, toWorldCoord(coords), textures["dirt"]);
 				else if (y < 9)
-					map[x][y][z] = std::make_shared<Block>(Type::SOLID, cube, toWorldCoordinates(x, y, z), textures["grass"]);
+					map[x][y][z] = std::make_shared<Block>(Type::SOLID, geometry, toWorldCoord(coords), textures["grass"]);
 				else
-					map[x][y][z] = std::make_shared<Block>(Type::AIR, cube, toWorldCoordinates(x, y, z), Texture());
-			}
-		}
-	}
-	for (int x = 0; x < 2 * halfWidth; x++)
-	{
-		for (int y = 0; y < 2 * halfHeight; y++)
-		{
-			for (int z = 0; z < 2 * halfLength; z++)
+					map[x][y][z] = std::make_shared<Block>(Type::AIR, geometry, toWorldCoord(coords), Texture());
+				}}}
+
+	for (int x = 0; x < chunkSize.x; x++) {
+		for (int y = 0; y < chunkSize.y; y++) {
+			for (int z = 0; z < chunkSize.z; z++)
 				hideNeighboursFace(map[x][y][z]);
-		}
-	}
+		}}
+}
+
+glm::ivec3 Chunk::toChunkCoord(glm::vec3 pos)
+{
+	int x = std::round(pos.x - chunkSize.x * (chunkPos.x - 0.5f));
+	int y = std::round(pos.y + chunkSize.y * 0.5f);
+	int z = std::round(pos.z - chunkSize.z * (chunkPos.y - 0.5f));
+	return glm::ivec3(x, y, z);
+}
+
+glm::vec3 Chunk::toWorldCoord(glm::ivec3 coords)
+{
+	float x = (float)coords.x + chunkSize.x * (chunkPos.x - 0.5f);
+	float y = (float)coords.y - chunkSize.y * 0.5f;
+	float z = (float)coords.z + chunkSize.z * (chunkPos.y - 0.5f);;
+	return glm::vec3(x, y, z);
+}
+
+
+bool Chunk::isInChunk(glm::ivec3 coords)
+{
+	bool xAxis = 0 <= coords.x && coords.x < chunkSize.x;
+	bool yAxis = 0 <= coords.y && coords.y < chunkSize.y;
+	bool zAxis = 0 <= coords.z && coords.z < chunkSize.z;
+
+	return xAxis && yAxis && zAxis;
 }
 
 void Chunk::addBlock(Texture texture, bool transparency)
@@ -52,24 +72,24 @@ void Chunk::addBlock(Texture texture, bool transparency)
 		case 5:position -= glm::vec3(1.0, 0.0, 0.0); break;
 		default: break;
 		}
-		if (isInMap(position))
+		glm::ivec3 coords = toChunkCoord(position);
+		if (isInChunk(coords))
 		{
-			std::vector<int> coords = toMapCoordinates(position);
-			map[coords[0]][coords[1]][coords[2]]->fillObject(texture, transparency);
-			hideNeighboursFace(map[coords[0]][coords[1]][coords[2]]);
+			map[coords.x][coords.y][coords.z]->fillObject(texture, transparency);
+			hideNeighboursFace(map[coords.x][coords.y][coords.z]);
 		}
 	}
 }
 
 void Chunk::selectObject(glm::vec3 position)
 {
-	std::vector<int> old = toMapCoordinates(selection);
-	map[old[0]][old[1]][old[2]]->setPointed(false);
+	glm::ivec3 old = toChunkCoord(selection);
+	map[old.x][old.y][old.z]->setPointed(false);
 
 	if (isSelection)
 	{
-		std::vector<int> coords = toMapCoordinates(position);
-		map[coords[0]][coords[1]][coords[2]]->setPointed(true);
+		glm::ivec3 coords = toChunkCoord(position);
+		map[coords.x][coords.y][coords.z]->setPointed(true);
 
 		selection = position;
 	}
@@ -77,20 +97,15 @@ void Chunk::selectObject(glm::vec3 position)
 
 void Chunk::destroyBlock()
 {
-	if (isSelection && isInMap(selection))
+	if (isSelection)
 	{
-		std::vector<int> coords = toMapCoordinates(selection);
-		map[coords[0]][coords[1]][coords[2]]->emptyObject();
-		showNeighboursFace(map[coords[0]][coords[1]][coords[2]]);
+		glm::ivec3 coords = toChunkCoord(selection);
+		if (isInChunk(coords))
+		{
+			map[coords.x][coords.y][coords.z]->emptyObject();
+			showNeighboursFace(map[coords.x][coords.y][coords.z]);
+		}
 	}
-}
-
-bool Chunk::isInMap(glm::vec3 position)
-{
-	bool xAxis = -halfWidth <= position.x && position.x < halfWidth;
-	bool yAxis = -halfHeight <= position.y && position.y < halfHeight;
-	bool zAxis = -halfLength <= position.z && position.z < halfLength;
-	return xAxis && yAxis && zAxis;
 }
 
 bool Chunk::collideObject(BlockPtr object, glm::vec3 position)
@@ -111,13 +126,13 @@ bool Chunk::collideObject(BlockPtr object, glm::vec3 position)
 
 bool Chunk::collideGround(glm::vec3 cam)
 {
-	std::vector<int> coords = toMapCoordinates(cam);
-	int minX = std::max(coords[0] - 1, 0);
-	int maxX = std::min(coords[0] + 2, 2 * halfWidth);
-	int minY = std::max(coords[1] - 1, 0);
-	int maxY = std::min(coords[1] + 2, 2 * halfHeight);
-	int minZ = std::max(coords[2] - 1, 0);
-	int maxZ = std::min(coords[2] + 2, 2 * halfLength);
+	glm::ivec3 coords = toChunkCoord(cam);
+	int minX = std::max(coords.x - 1, 0);
+	int maxX = std::min(coords.x + 2, chunkSize.x);
+	int minY = std::max(coords.y - 1, 0);
+	int maxY = std::min(coords.y + 2, chunkSize.y);
+	int minZ = std::max(coords.z - 1, 0);
+	int maxZ = std::min(coords.z + 2, chunkSize.z);
 
 	for (int x = minX; x < maxX; x++) {
 		for (int y = minY; y < maxY; y++) {
@@ -167,21 +182,21 @@ float Chunk::faceDistance(glm::vec3 camPos, glm::vec3 lookAt, glm::vec3 point, g
 
 std::map<std::string, BlockPtr> Chunk::getNeighbours(BlockPtr block)
 {
-	std::vector<int> coords = toMapCoordinates(block->getPosition());
-	int x = coords[0];
-	int y = coords[1];
-	int z = coords[2];
+	glm::ivec3 coords = toChunkCoord(block->getPosition());
+	int x = coords.x;
+	int y = coords.y;
+	int z = coords.z;
 	std::map<std::string, BlockPtr> neighbours;
 
-	if (x < 2 * halfWidth - 1)
+	if (x < chunkSize.x - 1)
 		neighbours["left"]   = map[x+1][y  ][z  ];
 	if (x > 0)
 		neighbours["right"]  = map[x-1][y  ][z  ];
-	if (y < 2 * halfHeight - 1)
+	if (y < chunkSize.y - 1)
 		neighbours["bottom"] = map[x  ][y+1][z  ];
 	if (y > 0)
 		neighbours["top"]    = map[x  ][y-1][z  ];
-	if (z < 2 * halfLength - 1)
+	if (z < chunkSize.z - 1)
 		neighbours["back"]   = map[x  ][y  ][z+1];
 	if (z > 0)
 		neighbours["front"]  = map[x  ][y  ][z-1];
@@ -221,13 +236,13 @@ void Chunk::updateSelection(glm::vec3 camPos, glm::vec3 lookAt)
 	int nearestFace = -1;
 	float minDist = 10;
 
-	std::vector<int> coords = toMapCoordinates(camPos);
-	int minX = std::max(coords[0] - 5, 0);
-	int maxX = std::min(coords[0] + 6, 2 * halfWidth);
-	int minY = std::max(coords[1] - 5, 0);
-	int maxY = std::min(coords[1] + 6, 2 * halfHeight);
-	int minZ = std::max(coords[2] - 5, 0);
-	int maxZ = std::min(coords[2] + 6, 2 * halfLength);
+	glm::ivec3 coords = toChunkCoord(camPos);
+	int minX = std::max(coords.x - 5, 0);
+	int maxX = std::min(coords.x + 6, chunkSize.x);
+	int minY = std::max(coords.y - 5, 0);
+	int maxY = std::min(coords.y + 6, chunkSize.y);
+	int minZ = std::max(coords.z - 5, 0);
+	int maxZ = std::min(coords.z + 6, chunkSize.z);
 
 	for (int x = minX ; x < maxX ; x++) {
 		for (int y = minY; y < maxY; y++) {
@@ -267,11 +282,11 @@ void Chunk::render(Shader shader, glm::vec3 camPos)
 	shader.use();
 	int count = 0;
 	std::vector<BlockPtr> transparentBlocks;
-	for (int x = 0; x < 2*halfWidth; x++)
+	for (int x = 0; x < chunkSize.x; x++)
 	{
-		for (int y = 0; y < 2*halfHeight; y++)
+		for (int y = 0; y < chunkSize.y; y++)
 		{
-			for (int z = 0; z < 2*halfLength; z++)
+			for (int z = 0; z < chunkSize.z; z++)
 			{	
 				if (map[x][y][z]->isTransparent())
 					transparentBlocks.push_back(map[x][y][z]);
@@ -293,30 +308,14 @@ void Chunk::render(Shader shader, glm::vec3 camPos)
 
 void Chunk::clearBuffers()
 {
-	for (int x = 0; x < 2 * halfWidth; x++)
+	for (int x = 0; x < chunkSize.x; x++)
 	{
-		for (int y = 0; y < 2 * halfHeight; y++)
+		for (int y = 0; y < chunkSize.y; y++)
 		{
-			for (int z = 0; z < 2 * halfLength; z++)
+			for (int z = 0; z < chunkSize.z; z++)
 			{
 				map[x][y][z]->freeBuffer();
 			}
 		}
 	}
-}
-
-std::vector<int> Chunk::toMapCoordinates(glm::vec3 worldCoords)
-{
-	int posX = std::round(worldCoords.x) + halfWidth;
-	int posY = std::round(worldCoords.y) + halfHeight;
-	int posZ = std::round(worldCoords.z) + halfLength;
-	return std::vector<int>{posX, posY, posZ};
-}
-
-glm::vec3 Chunk::toWorldCoordinates(int x, int y, int z)
-{
-	float posX = x - halfWidth;
-	float posY = y - halfHeight;
-	float posZ = z - halfLength;
-	return glm::vec3(posX, posY, posZ);
 }

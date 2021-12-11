@@ -1,6 +1,24 @@
 #ifndef TEXTURE_H
 #define TEXTURE_H
 
+#include <algorithm>
+#include <vector>
+#include <memory>
+#include <cmath>
+#include <map>
+#include <random>
+#include <cstdlib>
+#include <iostream>
+#include <fstream>
+#include <sstream>
+#include <string>
+
+#include <glad/glad.h>
+#include <GLFW/glfw3.h>
+#include <glm/glm.hpp>
+#include <glm/ext.hpp>
+
+
 class Texture
 {
 private:
@@ -22,7 +40,9 @@ public:
 	}
 
 	void add(std::string name, GLuint texture) { collection[name] = texture; }
+
 	GLuint get(std::string name) { return collection[name]; }
+
 };
 #endif // !TEXTURE_H
 

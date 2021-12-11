@@ -1,8 +1,7 @@
 #ifndef GAMEOBJECT_H
 #define GAMEOBJECT_H
 
-#include "Shader.h"
-#include "Texture.h"
+#include "cube.h"
 
 enum class Type {AIR, SOLID};
 

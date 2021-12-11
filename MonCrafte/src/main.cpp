@@ -30,6 +30,74 @@ float lastX;
 float lastY;
 bool firstMouse = true;
 
+GLuint load(const std::string& filename, bool withAlpha = false)
+{
+    int width, height, numComponents;
+
+    // Loading the image in CPU memory using stb_image
+    unsigned char* data = stbi_load(
+        filename.c_str(),
+        &width, &height,
+        &numComponents,
+        0);
+
+    GLuint texID;
+    // creates a texture and upload the image data in GPU memory
+    glGenTextures(1, &texID);
+    glBindTexture(GL_TEXTURE_2D, texID);
+
+    // setup texture filtering option and repeat model
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+    // fills the GPU texture with the data stored in the CPU image
+    if (withAlpha)
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+    else
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+
+    // Freeing the now useless CPU memory
+    stbi_image_free(data);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    return texID;
+}
+
+GLuint loadCubemap(std::vector<std::string> faces, bool withAlpha = false)
+{
+    GLuint textureID;
+    glGenTextures(1, &textureID);
+    glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
+
+    int width, height, nrChannels;
+    for (unsigned int i = 0; i < faces.size(); i++)
+    {
+        unsigned char* data = stbi_load(faces[i].c_str(), &width, &height, &nrChannels, 0);
+        if (data)
+        {
+            if (withAlpha)
+                glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
+                    0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+            else
+                glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
+                    0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+            stbi_image_free(data);
+        }
+        else
+        {
+            std::cout << "Cubemap tex failed to load at path: " << faces[i] << std::endl;
+            stbi_image_free(data);
+        }
+    }
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+    return textureID;
+}
 // Executed each time the window is resized.
 void windowSizeCallback(GLFWwindow* window, int width, int height)
 {
@@ -51,6 +119,9 @@ void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
         glfwSetWindowShouldClose(window, true);
     }
     world.updateSelection(camera.getPosition(), camera.getViewDirection());
+    // chunck detection
+    if(key == GLFW_KEY_W || key == GLFW_KEY_S || key == GLFW_KEY_D || key == GLFW_KEY_A)
+        world.updateCurrentChunk(camera.getPosition());
 }
 
 // Executed each time the mouse is mooved.
@@ -161,90 +232,21 @@ void initOpenGL()
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
 
-GLuint loadTextureFromFileToGPU(const std::string& filename, bool withAlpha = false)
-{
-    int width, height, numComponents;
-
-    // Loading the image in CPU memory using stb_image
-    unsigned char* data = stbi_load(
-        filename.c_str(),
-        &width, &height,
-        &numComponents,
-        0);
-
-    GLuint texID;
-    // creates a texture and upload the image data in GPU memory
-    glGenTextures(1, &texID);
-    glBindTexture(GL_TEXTURE_2D, texID);
-
-    // setup texture filtering option and repeat model
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-    // fills the GPU texture with the data stored in the CPU image
-    if (withAlpha)
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-    else
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-
-    // Freeing the now useless CPU memory
-    stbi_image_free(data);
-    glBindTexture(GL_TEXTURE_2D, 0);
-    return texID;
-}
-
-GLuint loadCubemap(std::vector<std::string> faces, bool withAlpha = false)
-{
-    GLuint textureID;
-    glGenTextures(1, &textureID);
-    glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
-
-    int width, height, nrChannels;
-    for (unsigned int i = 0; i < faces.size(); i++)
-    {
-        unsigned char* data = stbi_load(faces[i].c_str(), &width, &height, &nrChannels, 0);
-        if (data)
-        {
-            if (withAlpha)
-                glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
-                    0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-            else
-                glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
-                    0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-            stbi_image_free(data);
-        }
-        else
-        {
-            std::cout << "Cubemap tex failed to load at path: " << faces[i] << std::endl;
-            stbi_image_free(data);
-        }
-    }
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
-
-    return textureID;
-}
-
 void loadTextures()
 {
-    GLuint grassBottom = loadTextureFromFileToGPU("texture/grass/bottom.bmp");
-    GLuint grassTop = loadTextureFromFileToGPU("texture/grass/top.bmp");
-    GLuint grassSide = loadTextureFromFileToGPU("texture/grass/side.bmp");
-    GLuint stone = loadTextureFromFileToGPU("texture/stone.bmp");
-    GLuint woodTop = loadTextureFromFileToGPU("texture/wood/top.bmp");
-    GLuint woodSide = loadTextureFromFileToGPU("texture/wood/side.bmp");
-    GLuint water = loadTextureFromFileToGPU("texture/water.png", true);
+    GLuint grassBottom = load("texture/grass/bottom.bmp");
+    GLuint grassTop = load("texture/grass/top.bmp");
+    GLuint grassSide = load("texture/grass/side.bmp");
+    GLuint stone = load("texture/stone.bmp");
+    GLuint woodTop = load("texture/wood/top.bmp");
+    GLuint woodSide = load("texture/wood/side.bmp");
+    GLuint water = load("texture/water.png", true);
     /*GLuint sand = loadTextureFromFileToGPU("texture/sand.bmp");
     GLuint brick = loadTextureFromFileToGPU("texture/brick.bmp");
     GLuint woodplank = loadTextureFromFileToGPU("texture/woodplanck.bmp");
     GLuint gravel = loadTextureFromFileToGPU("texture/gravel.bmp");
     GLuint leaves = loadTextureFromFileToGPU("texture/leaves.png", true);*/
-    GLuint select = loadTextureFromFileToGPU("texture/selection.png", true);
+    GLuint select = load("texture/selection.png", true);
 
     Texture stoneTex(stone);
     stoneTex.add("selection", select);
@@ -350,7 +352,7 @@ int main()
         glm::vec3(0.0, 3.0, 0.0),  // position
         glm::vec3(0.0, 0.0, -1.0), // front vector
         glm::vec3(0.0, 1.0, 0.0),  // up vector
-        loadTextureFromFileToGPU("texture/font.png", true));
+        load("texture/font.png", true));
 
     camera.setAspectRatio(window);
 
