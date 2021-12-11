@@ -7,14 +7,14 @@ class Chunk
 {
 public:
 	Chunk() {};
-	Chunk(int width, int height, int length, CubePtr cube, std::map<std::string, GLuint> textures);
+	Chunk(int width, int height, int length, CubePtr cube, std::map<std::string, Texture> textures);
 
 	// coordinates
 	glm::vec3 toWorldCoordinates(int x, int y, int z);
 	std::vector<int> toMapCoordinates(glm::vec3 worldCoords);
 	bool isInMap(glm::vec3 position);
 	// objects
-	void addBlock(GLuint texture, bool transparency = false);
+	void addBlock(Texture texture, bool transparency = false);
 	void destroyBlock();
 	void selectObject(glm::vec3 position);
 	float faceDistance(glm::vec3 camPos, glm::vec3 lookAt, glm::vec3 point, glm::vec3 normal);

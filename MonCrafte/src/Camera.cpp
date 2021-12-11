@@ -8,7 +8,8 @@ Camera::Camera(World world, glm::vec3 position, glm::vec3 front, glm::vec3 up, G
     blockInHand = std::make_shared<Block>(
         Type::SOLID,
         world.getCubeGeometry(), 
-        glm::vec3(0.f));
+        glm::vec3(0.f),
+        Texture());
 
     blockInHand->setSize(0.1);
     pointer.initBuffers();
@@ -143,7 +144,7 @@ void Camera::render(Shader playerShader, Shader pointerShader, World world)
         {
             blockInHand->setPosition(camPos + camFront / 4 - camRight / 6 - camUp / 7);
             blockInHand->setTexture(world.getTexture(availableBlocks[currentBlock]));
-            blockInHand->renderForPlayer(playerShader);
+            blockInHand->render(playerShader);
         }
     }
     catch (...) { std::cout << "failed to render player" << std::endl; }

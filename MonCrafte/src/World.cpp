@@ -1,6 +1,6 @@
 #include "World.h"
 
-World::World(std::map<std::string, GLuint> textureCollection, GLuint skyTexture) :
+World::World(std::map<std::string, Texture> textureCollection, GLuint skyTexture) :
 	cube(std::make_shared<Cube>()),
 	textures(textureCollection),
 	skybox(Skybox(skyTexture))

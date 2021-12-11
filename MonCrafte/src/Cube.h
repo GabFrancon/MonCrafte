@@ -2,13 +2,14 @@
 #define CUBE_H
 
 #include "Geometry.h"
+#include "Texture.h"
 
 class Cube : public Geometry
 {
 public:
 	Cube();
 	void initBuffers() override;
-	void draw(std::map<std::string, bool> facesRendering);
+	void draw(Texture texture, std::map<std::string, bool> facesRendering);
 };
 
 typedef std::shared_ptr<Cube> CubePtr;

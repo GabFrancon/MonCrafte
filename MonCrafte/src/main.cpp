@@ -11,6 +11,7 @@ GLFWwindow* window = nullptr;
 GLuint program = 0;
 Camera camera;
 World world;
+std::map<std::string, Texture> textures;
 
 // shaders
 Shader worldShader;
@@ -229,6 +230,43 @@ GLuint loadCubemap(std::vector<std::string> faces, bool withAlpha = false)
     return textureID;
 }
 
+void loadTextures()
+{
+    GLuint grassBottom = loadTextureFromFileToGPU("texture/grass/bottom.bmp");
+    GLuint grassTop = loadTextureFromFileToGPU("texture/grass/top.bmp");
+    GLuint grassSide = loadTextureFromFileToGPU("texture/grass/side.bmp");
+    GLuint stone = loadTextureFromFileToGPU("texture/stone.bmp");
+    GLuint woodTop = loadTextureFromFileToGPU("texture/wood/top.bmp");
+    GLuint woodSide = loadTextureFromFileToGPU("texture/wood/side.bmp");
+    GLuint water = loadTextureFromFileToGPU("texture/water.png", true);
+    /*GLuint sand = loadTextureFromFileToGPU("texture/sand.bmp");
+    GLuint brick = loadTextureFromFileToGPU("texture/brick.bmp");
+    GLuint woodplank = loadTextureFromFileToGPU("texture/woodplanck.bmp");
+    GLuint gravel = loadTextureFromFileToGPU("texture/gravel.bmp");
+    GLuint leaves = loadTextureFromFileToGPU("texture/leaves.png", true);*/
+    GLuint select = loadTextureFromFileToGPU("texture/selection.png", true);
+
+    Texture stoneTex(stone);
+    stoneTex.add("selection", select);
+    textures["stone"] = stoneTex;
+
+    Texture grassTex(grassTop, grassBottom, grassSide);
+    grassTex.add("selection", select);
+    textures["grass"] = grassTex;
+
+    Texture dirtTex(grassBottom);
+    dirtTex.add("selection", select);
+    textures["dirt"] = dirtTex;
+
+    Texture woodTex(woodTop, woodTop, woodSide);
+    woodTex.add("selection", select);
+    textures["wood"] = woodTex;
+
+    Texture waterTex(water);
+    waterTex.add("selection", select);
+    textures["water+"] = waterTex;
+}
+
 void setupShaders()
 {
     worldShader   = Shader("shader/vertexShader.glsl", "shader/fragmentShader.glsl");
@@ -292,21 +330,7 @@ int main()
 {
     initGLFW();
     initOpenGL();
-
-    // load textures
-    std::map<std::string, GLuint> textures;
-    textures["dirt"]       = loadTextureFromFileToGPU("texture/dirt.bmp");
-    textures["stone"]      = loadTextureFromFileToGPU("texture/stone.bmp");
-    textures["sand"]       = loadTextureFromFileToGPU("texture/sand.bmp");
-    textures["brick"]      = loadTextureFromFileToGPU("texture/brick.bmp");
-    textures["grass"]      = loadTextureFromFileToGPU("texture/grass.bmp");
-    textures["woodplanck"] = loadTextureFromFileToGPU("texture/woodplanck.bmp");
-    textures["gravel"]     = loadTextureFromFileToGPU("texture/gravel.bmp");
-    textures["leaves+"]    = loadTextureFromFileToGPU("texture/leaves.png", true);
-    textures["water+"]     = loadTextureFromFileToGPU("texture/water.png", true);
-    textures["wood"]       = loadTextureFromFileToGPU("texture/wood.bmp");
-    textures["sun"]        = loadTextureFromFileToGPU("texture/sun.bmp");
-    textures["selection+"] = loadTextureFromFileToGPU("texture/selection.png", true);
+    loadTextures();
 
     std::vector<std::string> faces = {
     "texture/skybox/default/right.bmp",
@@ -326,20 +350,20 @@ int main()
         glm::vec3(0.0, 3.0, 0.0),  // position
         glm::vec3(0.0, 0.0, -1.0), // front vector
         glm::vec3(0.0, 1.0, 0.0),  // up vector
-        loadTextureFromFileToGPU("texture/font2.png", true));
+        loadTextureFromFileToGPU("texture/font.png", true));
 
     camera.setAspectRatio(window);
 
-    camera.insertBlock("dirt", 0);
+    camera.insertBlock("grass", 0);
     camera.insertBlock("stone", 1);
-    camera.insertBlock("sand", 2);
-    camera.insertBlock("brick", 3);
-    camera.insertBlock("grass", 4);
-    camera.insertBlock("woodplanck", 5);
-    camera.insertBlock("gravel", 6);
-    camera.insertBlock("leaves+", 7);
-    camera.insertBlock("water+", 8);
-    camera.insertBlock("wood", 9);
+    camera.insertBlock("dirt", 2);
+    camera.insertBlock("wood", 3);
+    camera.insertBlock("water+", 4);
+    /*camera.insertBlock("sand", 5);
+    camera.insertBlock("brick", 6);
+    camera.insertBlock("woodplanck", 7);
+    camera.insertBlock("gravel", 8);
+    camera.insertBlock("leaves+", 9);*/
 
     // finally send all the data to the shaders
     setupShaders();

@@ -11,8 +11,8 @@ private:
 	std::map<std::string, bool> faceRendering;
 
 public:
-	Block(Type _type, CubePtr cube, glm::vec3 _position, GLuint _selectTexture = 0, GLuint _texture = 0, bool _transparent = 0)
-		: GameObject(_type, _position, _selectTexture, _texture, _transparent),
+	Block(Type _type, CubePtr cube, glm::vec3 _position, Texture _texture, bool _transparent = 0)
+		: GameObject(_type, _position, _texture, _transparent),
 		geometry(cube),
 		faceRendering{ {"right", !isEmpty()}, {"left",!isEmpty()}, {"top", !isEmpty()}, {"bottom", !isEmpty()}, {"front", !isEmpty()}, {"back", !isEmpty()} } {}
 
@@ -28,7 +28,7 @@ public:
 		if (name == "back")  return "front";
 	}
 
-	void fillObject(GLuint texture, bool transparency) override
+	void fillObject(Texture texture, bool transparency) override
 	{
 		for (auto& it : faceRendering)
 			it.second = true;
@@ -47,14 +47,8 @@ public:
 		if (!isEmpty())
 		{
 			GameObject::render(shader);
-			geometry->draw(faceRendering);
+			geometry->draw(texture, faceRendering);
 		}
-	}
-
-	void renderForPlayer(Shader shader) override
-	{
-		GameObject::renderForPlayer(shader);
-		geometry->draw(faceRendering);
 	}
 
 	void freeBuffer() { geometry->freeBuffers(); }

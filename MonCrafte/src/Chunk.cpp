@@ -1,6 +1,6 @@
 #include "Chunk.h"
 
-Chunk::Chunk(int width, int height, int length, CubePtr cube, std::map<std::string, GLuint> textures) :
+Chunk::Chunk(int width, int height, int length, CubePtr cube, std::map<std::string, Texture> textures) :
 	halfWidth(std::round(width / 2)),
 	halfHeight(std::round(height / 2)),
 	halfLength(std::round(length / 2)),
@@ -17,9 +17,13 @@ Chunk::Chunk(int width, int height, int length, CubePtr cube, std::map<std::stri
 			for (int z = 0; z < 2 * halfLength; z++)
 			{
 				if (y < 5)
-					map[x][y][z] = std::make_shared<Block>(Type::SOLID, cube, toWorldCoordinates(x, y, z), textures["selection+"], textures["stone"]);
+					map[x][y][z] = std::make_shared<Block>(Type::SOLID, cube, toWorldCoordinates(x, y, z), textures["stone"]);
+				else if (y < 8)
+					map[x][y][z] = std::make_shared<Block>(Type::SOLID, cube, toWorldCoordinates(x, y, z), textures["dirt"]);
+				else if (y < 9)
+					map[x][y][z] = std::make_shared<Block>(Type::SOLID, cube, toWorldCoordinates(x, y, z), textures["grass"]);
 				else
-					map[x][y][z] = std::make_shared<Block>(Type::AIR, cube, toWorldCoordinates(x, y, z), textures["selection+"]);
+					map[x][y][z] = std::make_shared<Block>(Type::AIR, cube, toWorldCoordinates(x, y, z), Texture());
 			}
 		}
 	}
@@ -33,7 +37,7 @@ Chunk::Chunk(int width, int height, int length, CubePtr cube, std::map<std::stri
 	}
 }
 
-void Chunk::addBlock(GLuint texture, bool transparency)
+void Chunk::addBlock(Texture texture, bool transparency)
 {
 	if (isSelection && distanceToSelection > 1.8f)
 	{

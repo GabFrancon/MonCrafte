@@ -16,17 +16,17 @@ private:
 	std::vector<LightPtr> lights;
 
 	// textures
-	std::map<std::string, GLuint> textures;
+	std::map<std::string, Texture> textures;
 
 	// skybox
 	Skybox skybox;
 
 public:
 	World() {};
-	World(std::map<std::string, GLuint> textureCollection, GLuint skyTexture);
+	World(std::map<std::string, Texture> textureCollection, GLuint skyTexture);
 
 	CubePtr getCubeGeometry() { return cube; }
-	GLuint getTexture(std::string name) { return textures[name]; }
+	Texture getTexture(std::string name) { return textures[name]; }
 
 	void addBlock(std::string texName);
 	void destroyBlock();
