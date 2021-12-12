@@ -20,11 +20,8 @@ void GameObject::emptyObject()
 
 void GameObject::render(Shader shader)
 {
-    if (!isEmpty())
-    {
-        // send uniform values to shaders
-        shader.setMat4("transMat", transMat);
-        shader.setBool("pointed", pointed);
-        shader.setVec3("lightCoeff", lightCoeff);
-    }
+    // send uniform values to shaders
+    shader.setMat4("transMat", transMat);
+    shader.setBool("pointed", pointed);
+    shader.setVec3("lightCoeff", lightCoeff);
 }

@@ -295,15 +295,18 @@ void Chunk::render(Shader shader, glm::vec3 camPos)
 			}
 		}
 	}
-
-	std::map<float, BlockPtr> sorted;
-	for (BlockPtr block : transparentBlocks)
+	if (transparentBlocks.size() != 0)
 	{
-		float distance = glm::length(camPos - block->getPosition());
-		sorted[distance] = block;
+		std::map<float, BlockPtr> sorted;
+		for (BlockPtr block : transparentBlocks)
+		{
+			float distance = glm::length(camPos - block->getPosition());
+			sorted[distance] = block;
+		}
+		for (std::map<float, BlockPtr>::reverse_iterator it = sorted.rbegin(); it != sorted.rend(); ++it)
+			it->second->render(shader);
 	}
-	for (std::map<float, BlockPtr>::reverse_iterator it = sorted.rbegin(); it != sorted.rend(); ++it)
-		it->second->render(shader);
+	
 }
 
 void Chunk::clearBuffers()

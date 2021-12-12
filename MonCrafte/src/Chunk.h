@@ -40,5 +40,6 @@ private:
 	std::vector<std::vector<std::vector<BlockPtr>>> map;
 };
 
+typedef std::shared_ptr<Chunk> ChunkPtr;
 
 #endif // !CHUNK_H

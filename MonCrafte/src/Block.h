@@ -41,12 +41,25 @@ public:
 		GameObject::emptyObject();
 	}
 
+	bool isHidden()
+	{
+		for (auto& it : faceRendering)
+		{
+			if (it.second == true)
+				return false;
+		}
+		return true;
+	}
+
 	void render(Shader shader) override
 	{
 		if (!isEmpty())
 		{
-			GameObject::render(shader);
-			geometry->draw(texture, faceRendering);
+			if (!isHidden())
+			{
+				GameObject::render(shader);
+				geometry->draw(texture, faceRendering);
+			}
 		}
 	}
 

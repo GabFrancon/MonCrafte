@@ -9,10 +9,10 @@ class World
 {
 private:
 	// chunks
-	unsigned int numberOfChunks = 1;
+	unsigned int worldSize = 3;                    // in terms of number of chunks
 	glm::ivec3 chunkSize = glm::ivec3(15, 25, 15); // in terms of number of blocks
 	glm::ivec2 currentChunk = glm::ivec2(0, 0);
-	Chunk chunk;
+	std::vector < std::vector < ChunkPtr >> chunkMap;
 	CubePtr cube;
 
 	// lights
@@ -31,6 +31,8 @@ public:
 	CubePtr getCubeGeometry() { return cube; }
 	Texture getTexture(std::string name) { return textures[name]; }
 	void updateCurrentChunk(glm::vec3 camPos);
+	glm::ivec2 toMapCoordinates(glm::ivec2 position);
+	glm::ivec2 toWorldCoordinates(glm::ivec2 position);
 
 	void addBlock(std::string texName);
 	void destroyBlock();

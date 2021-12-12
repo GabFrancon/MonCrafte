@@ -5,6 +5,7 @@ World::World(std::map<std::string, Texture> textureCollection, GLuint skyTexture
 	textures(textureCollection),
 	skybox(Skybox(skyTexture))
 {
+	chunkMap = std::vector<std::vector<ChunkPtr>>(worldSize, std::vector<ChunkPtr>(worldSize, nullptr));
 	bindToGPU();
 }
 
@@ -24,6 +25,15 @@ void World::updateCurrentChunk(glm::vec3 camPos)
 		std::cout << "current chunk : (" << x << ", " << y << ")\n" << std::endl;
 	}
 }
+glm::ivec2 World::toMapCoordinates(glm::ivec2 position)
+{
+	return glm::ivec2(std::round(position.x + worldSize / 2), std::round(position.y + worldSize / 2));
+}
+
+glm::ivec2 World::toWorldCoordinates(glm::ivec2 position)
+{
+	return glm::ivec2(std::round(position.x - worldSize / 2), std::round(position.y - worldSize / 2));
+}
 
 
 void World::addBlock(std::string texName)
@@ -31,13 +41,13 @@ void World::addBlock(std::string texName)
 	if (texName != "None")
 	{
 		bool transparency = (texName.back() == '+');
-		chunk.addBlock(getTexture(texName), transparency);
+		chunkMap[0][0]->addBlock(getTexture(texName), transparency);
 	}
 }
 
 void World::destroyBlock()
 {
-	chunk.destroyBlock();
+	chunkMap[0][0]->destroyBlock();
 }
 
 void World::addLight(glm::vec3 position, glm::vec3 color)
@@ -52,17 +62,20 @@ void World::destroyLight(unsigned int index)
 
 bool World::collide(glm::vec3 camPosition)
 {
-	return chunk.collideGround(camPosition);
+	return chunkMap[0][0]->collideGround(camPosition);
 }
 
 void World::updateSelection(glm::vec3 camPos, glm::vec3 lookAt)
 {
-	chunk.updateSelection(camPos, lookAt);
+	chunkMap[0][0]->updateSelection(camPos, lookAt);
 }
 
 void World::genWorld()
 {
-	chunk = Chunk(glm::ivec2(1, 0), cube, textures);
+	chunkMap[0][0] = std::make_shared<Chunk>(glm::ivec2(0, 0), cube, textures);
+	chunkMap[0][1] = std::make_shared<Chunk>(glm::ivec2(0, 1), cube, textures);
+	chunkMap[1][0] = std::make_shared<Chunk>(glm::ivec2(1, 0), cube, textures);
+	chunkMap[1][1] = std::make_shared<Chunk>(glm::ivec2(1, 1), cube, textures);
 
 	addLight(
 		glm::vec3(20.0, 20.0, -20.0),						  // position
@@ -81,10 +94,16 @@ void World::render(Shader groundShader, Shader skyShader, glm::vec3 camPos)
 	skybox.render(skyShader);
 
 	// render ground
-	chunk.render(groundShader, camPos);
+	for(int x=0 ; x<worldSize ; x++)
+		for (int y = 0; y < worldSize; y++)
+			if(chunkMap[x][y])
+				chunkMap[x][y]->render(groundShader, camPos);
 }
 
 void World::clearBuffers()
 {
-	chunk.clearBuffers();
+	for (int x = 0; x < worldSize; x++)
+		for (int y = 0; y < worldSize; y++)
+			if (chunkMap[x][y])
+				chunkMap[x][y]->clearBuffers();
 }
