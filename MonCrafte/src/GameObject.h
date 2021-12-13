@@ -13,6 +13,7 @@ protected:
 	glm::vec3 position;
 	glm::vec3 size;
 	glm::mat4 transMat;
+	glm::mat4 modelNorm;
 
 	Texture texture;
 
@@ -34,7 +35,7 @@ public:
 	void setTexture(Texture texture) { this->texture = texture; }
 	void setPointed(bool pointed) { this->pointed = pointed; }
 	void setTransparent(bool transparent) { this->transparent = transparent; }
-	void updateTransMat() { transMat = glm::scale(glm::translate(glm::mat4(1.f), position), size); }
+	void updateTransMat();
 
 	virtual void fillObject(Texture texture, bool transparent);
 	virtual void emptyObject();

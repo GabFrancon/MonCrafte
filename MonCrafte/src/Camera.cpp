@@ -47,25 +47,23 @@ void Camera::updateCamPos(GLFWwindow* window, float deltaTime, World world)
 {
     float cameraSpeed = playerVelociy * deltaTime;
     glm::vec3 newPos = camPos;
-    glm::vec3 frontDir = glm::normalize(glm::vec3(camFront.x, 0.0, camFront.z));
-    glm::vec3 rightDir = camRight;
-    glm::vec3 upDir    = worldUp;
 
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-        newPos += frontDir * cameraSpeed;
+        newPos += worldFront * cameraSpeed;
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-        newPos -= frontDir * cameraSpeed;
+        newPos -= worldFront * cameraSpeed;
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-        newPos += rightDir * cameraSpeed;
+        newPos += camRight * cameraSpeed;
     if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-        newPos -= rightDir * cameraSpeed;
+        newPos -= camRight * cameraSpeed;
     if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
-        newPos += upDir * cameraSpeed;
+        newPos += worldUp * cameraSpeed;
     if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
-        newPos -= upDir * cameraSpeed;
+        newPos -= worldUp * cameraSpeed;
 
-    if (!world.collide(newPos))
-        camPos = newPos;
+    if (newPos != camPos)
+        if (!world.collide(newPos))
+            camPos = newPos; 
 }
 
 void Camera::processMouseMoovement(float xoffset, float yoffset, GLboolean constrainPitch)
@@ -100,28 +98,29 @@ void Camera::processMouseScroll(float yoffset)
 
 void Camera::updateCameraVectors()
 {
-    glm::vec3 front;
-    front.x = std::cos(glm::radians(yaw)) * std::cos(glm::radians(pitch));
-    front.y = std::sin(glm::radians(pitch));
-    front.z = std::sin(glm::radians(yaw)) * std::cos(glm::radians(pitch));
+    float x = std::cos(glm::radians(yaw)) * std::cos(glm::radians(pitch));
+    float y = std::sin(glm::radians(pitch));
+    float z = std::sin(glm::radians(yaw)) * std::cos(glm::radians(pitch));
 
-    camFront = glm::normalize(front);
-    camRight = glm::normalize(glm::cross(camFront, worldUp));
-    camUp = glm::normalize(glm::cross(camRight, camFront));
+    camFront   = glm::normalize(glm::vec3(x, y, z));
+    worldFront = glm::normalize(glm::vec3(x, 0.0, z));
+    camRight   = glm::normalize(glm::cross(camFront, worldUp));
+    camUp      = glm::normalize(glm::cross(camRight, camFront));
 }
 
 void Camera::bindView(Shader worldShader, Shader playerShader, Shader skyShader)
 {
     glm::mat4 viewMat = computeViewMatrix();
+    glm::mat4 troncatedView = glm::mat4(glm::mat3(viewMat));
 
     worldShader.use();
     worldShader.setMat4("viewMat", viewMat);
 
     playerShader.use();
-    playerShader.setMat4("viewMat", viewMat);
+    playerShader.setMat4("viewMat", troncatedView);
 
     skyShader.use();
-    skyShader.setMat4("viewMat", glm::mat4(glm::mat3(viewMat)));
+    skyShader.setMat4("viewMat", troncatedView);
 }
 
 void Camera::bindProjection(Shader worldShader, Shader playerShader, Shader skyShader)
@@ -142,7 +141,7 @@ void Camera::render(Shader playerShader, Shader pointerShader, World world)
     try {
         if (availableBlocks[currentBlock] != "None")
         {
-            blockInHand->setPosition(camPos + camFront / 4 - camRight / 6 - camUp / 7);
+            blockInHand->setPosition(camFront / 4 - camRight / 7 - camUp / 9);
             blockInHand->setTexture(world.getTexture(availableBlocks[currentBlock]));
             blockInHand->render(playerShader);
         }

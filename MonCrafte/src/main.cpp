@@ -22,8 +22,8 @@ Shader skyShader;
 // time
 float currentFrame = 0.f;
 float lastFrame    = 0.f;
-float lastTime = 0.f;
-int nbFrames = 0;
+float lastTime     = 0.f;
+int nbFrames       = 0;
 
 // mouse
 float lastX;
@@ -241,11 +241,11 @@ void loadTextures()
     GLuint woodTop = load("texture/wood/top.bmp");
     GLuint woodSide = load("texture/wood/side.bmp");
     GLuint water = load("texture/water.png", true);
-    /*GLuint sand = loadTextureFromFileToGPU("texture/sand.bmp");
-    GLuint brick = loadTextureFromFileToGPU("texture/brick.bmp");
-    GLuint woodplank = loadTextureFromFileToGPU("texture/woodplanck.bmp");
-    GLuint gravel = loadTextureFromFileToGPU("texture/gravel.bmp");
-    GLuint leaves = loadTextureFromFileToGPU("texture/leaves.png", true);*/
+    GLuint sand = load("texture/sand.bmp");
+    GLuint woodplank = load("texture/woodplanck.bmp");
+    GLuint brick = load("texture/brick.bmp");
+    GLuint gravel = load("texture/gravel.bmp");
+    GLuint leaves = load("texture/leaves.png", true);
     GLuint select = load("texture/selection.png", true);
 
     Texture stoneTex(stone);
@@ -267,6 +267,26 @@ void loadTextures()
     Texture waterTex(water);
     waterTex.add("selection", select);
     textures["water+"] = waterTex;
+
+    Texture sandTex(sand);
+    sandTex.add("selection", select);
+    textures["sand"] = sandTex;
+
+    Texture woodplanckTex(woodplank);
+    woodplanckTex.add("selection", select);
+    textures["woodplanck"] = woodplanckTex;
+
+    Texture brickTex(brick);
+    brickTex.add("selection", select);
+    textures["brick"] = brickTex;
+
+    Texture gravelTex(gravel);
+    gravelTex.add("selection", select);
+    textures["gravel"] = gravelTex;
+
+    Texture leavesTex(leaves);
+    leavesTex.add("selection", select);
+    textures["leaves+"] = leavesTex;
 }
 
 void setupShaders()
@@ -361,11 +381,11 @@ int main()
     camera.insertBlock("dirt", 2);
     camera.insertBlock("wood", 3);
     camera.insertBlock("water+", 4);
-    /*camera.insertBlock("sand", 5);
-    camera.insertBlock("brick", 6);
-    camera.insertBlock("woodplanck", 7);
+    camera.insertBlock("sand", 5);
+    camera.insertBlock("woodplanck", 6);
+    camera.insertBlock("brick", 7);
     camera.insertBlock("gravel", 8);
-    camera.insertBlock("leaves+", 9);*/
+    camera.insertBlock("leaves+", 9);
 
     // finally send all the data to the shaders
     setupShaders();

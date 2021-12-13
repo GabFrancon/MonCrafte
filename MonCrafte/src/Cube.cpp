@@ -188,13 +188,11 @@ void Cube::draw(Texture texture, std::map<std::string, bool> facesRendering)
     {
         glBindTexture(GL_TEXTURE_2D, texture.get("side"));
         glDrawArrays(GL_TRIANGLES, 6, 6);
-
     }
     if (facesRendering["bottom"])
     {
         glBindTexture(GL_TEXTURE_2D, texture.get("bottom"));
         glDrawArrays(GL_TRIANGLES, 12, 6);
-
     }
     if (facesRendering["top"])
     {

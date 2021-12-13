@@ -35,6 +35,8 @@ private:
     glm::vec3 camFront;
     glm::vec3 camUp;
     glm::vec3 camRight;
+
+    glm::vec3 worldFront;
     glm::vec3 worldUp;
 
     float scroll = 4.0f;

@@ -110,18 +110,18 @@ void Chunk::destroyBlock()
 
 bool Chunk::collideObject(BlockPtr object, glm::vec3 position)
 {
-	if (object->isEmpty() || object->isTransparent())
+	if (object->isEmpty() || object->isTransparent() || object->isHidden())
 		return false;
 
 	glm::vec3 objPos = object->getPosition();
 	glm::vec3 pos = position - glm::vec3(0.f, 0.5f, 0.f);
 
-	bool xAxis = (pos.x - 0.4 < objPos.x + 0.4) && (pos.x + 0.4 > objPos.x - 0.4);
-	bool yAxis = (pos.y - 0.9 < objPos.y + 0.1) && (pos.y + 0.6 > objPos.y - 0.6);
-	bool zAxis = (pos.z - 0.4 < objPos.z + 0.4) && (pos.z + 0.4 > objPos.z - 0.4);
+	if ((pos.x - 0.4 < objPos.x + 0.4) && (pos.x + 0.4 > objPos.x - 0.4))
+		if ((pos.y - 0.9 < objPos.y + 0.1) && (pos.y + 0.6 > objPos.y - 0.6))
+			if ((pos.z - 0.4 < objPos.z + 0.4) && (pos.z + 0.4 > objPos.z - 0.4))
+				return true;
 
-	return xAxis && yAxis && zAxis;
-
+	return false;
 }
 
 bool Chunk::collideGround(glm::vec3 cam)
@@ -248,7 +248,7 @@ void Chunk::updateSelection(glm::vec3 camPos, glm::vec3 lookAt)
 		for (int y = minY; y < maxY; y++) {
 			for (int z = minZ; z < maxZ ; z++)
 			{
-				if (!map[x][y][z]->isEmpty())
+				if (!map[x][y][z]->isEmpty() && !map[x][y][z]->isHidden())
 				{
 					glm::vec3 pos = map[x][y][z]->getPosition();
 					float frontDist  = faceDistance(camPos, lookAt, pos + glm::vec3(0.0, 0.0, 0.5), glm::vec3( 0.0, 0.0, 1.0));
