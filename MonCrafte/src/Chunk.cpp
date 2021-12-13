@@ -1,6 +1,6 @@
 #include "Chunk.h"
 
-Chunk::Chunk(glm::ivec2 position, CubePtr geometry, std::map<std::string, Texture> textures) :
+Chunk::Chunk(glm::ivec2 position, CubePtr geometry, Texture texture) :
 	chunkPos(position),
 	isSelection(false),
 	selectedFace(-1),
@@ -15,11 +15,7 @@ Chunk::Chunk(glm::ivec2 position, CubePtr geometry, std::map<std::string, Textur
 			for (int z = 0; z < chunkSize.z; z++) {
 				glm::ivec3 coords = glm::ivec3(x, y, z);
 				if (y < 5)
-					map[x][y][z] = std::make_shared<Block>(Type::SOLID, geometry, toWorldCoord(coords), textures["stone"]);
-				else if (y < 8)
-					map[x][y][z] = std::make_shared<Block>(Type::SOLID, geometry, toWorldCoord(coords), textures["dirt"]);
-				else if (y < 9)
-					map[x][y][z] = std::make_shared<Block>(Type::SOLID, geometry, toWorldCoord(coords), textures["grass"]);
+					map[x][y][z] = std::make_shared<Block>(Type::SOLID, geometry, toWorldCoord(coords), texture);
 				else
 					map[x][y][z] = std::make_shared<Block>(Type::AIR, geometry, toWorldCoord(coords), Texture());
 				}}}
@@ -33,33 +29,33 @@ Chunk::Chunk(glm::ivec2 position, CubePtr geometry, std::map<std::string, Textur
 
 glm::ivec3 Chunk::toChunkCoord(glm::vec3 pos)
 {
-	int x = std::round(pos.x - chunkSize.x * (chunkPos.x - 0.5f));
-	int y = std::round(pos.y + chunkSize.y * 0.5f);
-	int z = std::round(pos.z - chunkSize.z * (chunkPos.y - 0.5f));
+	int x = pos.x - chunkSize.x * chunkPos.x + std::floor((float)chunkSize.x/2);
+	int y = pos.y                            + std::floor((float)chunkSize.y/2);
+	int z = pos.z - chunkSize.z * chunkPos.y + std::floor((float)chunkSize.z/2);
 	return glm::ivec3(x, y, z);
 }
 
 glm::vec3 Chunk::toWorldCoord(glm::ivec3 coords)
 {
-	float x = (float)coords.x + chunkSize.x * (chunkPos.x - 0.5f);
-	float y = (float)coords.y - chunkSize.y * 0.5f;
-	float z = (float)coords.z + chunkSize.z * (chunkPos.y - 0.5f);;
+	float x = coords.x + chunkSize.x * chunkPos.x - std::floor((float)chunkSize.x/2);
+	float y = coords.y                            - std::floor((float)chunkSize.y/2);
+	float z = coords.z + chunkSize.z * chunkPos.y - std::floor((float)chunkSize.z/2);
 	return glm::vec3(x, y, z);
 }
 
 
 bool Chunk::isInChunk(glm::ivec3 coords)
 {
-	bool xAxis = 0 <= coords.x && coords.x < chunkSize.x;
-	bool yAxis = 0 <= coords.y && coords.y < chunkSize.y;
-	bool zAxis = 0 <= coords.z && coords.z < chunkSize.z;
-
-	return xAxis && yAxis && zAxis;
+	if (0 <= coords.x && coords.x < chunkSize.x)
+		if (0 <= coords.y && coords.y < chunkSize.y)
+			if (0 <= coords.z && coords.z < chunkSize.z)
+				return true;
+	return false;
 }
 
 void Chunk::addBlock(Texture texture, bool transparency)
 {
-	if (isSelection && distanceToSelection > 1.8f)
+	if (isSelection && distanceToSelection > 1.5f)
 	{
 		glm::vec3  position = selection;
 		switch (selectedFace)
@@ -108,41 +104,10 @@ void Chunk::destroyBlock()
 	}
 }
 
-bool Chunk::collideObject(BlockPtr object, glm::vec3 position)
+bool Chunk::canBeCrossed(glm::ivec3 blockCoords)
 {
-	if (object->isEmpty() || object->isTransparent() || object->isHidden())
-		return false;
-
-	glm::vec3 objPos = object->getPosition();
-	glm::vec3 pos = position - glm::vec3(0.f, 0.5f, 0.f);
-
-	if ((pos.x - 0.4 < objPos.x + 0.4) && (pos.x + 0.4 > objPos.x - 0.4))
-		if ((pos.y - 0.9 < objPos.y + 0.1) && (pos.y + 0.6 > objPos.y - 0.6))
-			if ((pos.z - 0.4 < objPos.z + 0.4) && (pos.z + 0.4 > objPos.z - 0.4))
-				return true;
-
-	return false;
-}
-
-bool Chunk::collideGround(glm::vec3 cam)
-{
-	glm::ivec3 coords = toChunkCoord(cam);
-	int minX = std::max(coords.x - 1, 0);
-	int maxX = std::min(coords.x + 2, chunkSize.x);
-	int minY = std::max(coords.y - 1, 0);
-	int maxY = std::min(coords.y + 2, chunkSize.y);
-	int minZ = std::max(coords.z - 1, 0);
-	int maxZ = std::min(coords.z + 2, chunkSize.z);
-
-	for (int x = minX; x < maxX; x++) {
-		for (int y = minY; y < maxY; y++) {
-			for (int z = minZ; z < maxZ; z++) {
-				if (collideObject(map[x][y][z], cam))
-					return true;
-			}
-		}
-	}
-	return false;
+	BlockPtr object = map[blockCoords.x][blockCoords.y][blockCoords.z];
+	return object->isEmpty() || object->isTransparent() || object->isHidden();
 }
 
 float Chunk::faceDistance(glm::vec3 camPos, glm::vec3 lookAt, glm::vec3 point, glm::vec3 normal)

@@ -7,7 +7,7 @@ class Chunk
 {
 public:
 	Chunk() {};
-	Chunk(glm::ivec2 position, CubePtr geometry, std::map<std::string, Texture> textures);
+	Chunk(glm::ivec2 position, CubePtr geometry, Texture texture);
 
 	// coordinates
 	glm::ivec3 toChunkCoord(glm::vec3 pos);
@@ -19,8 +19,8 @@ public:
 	void selectObject(glm::vec3 position);
 	float faceDistance(glm::vec3 camPos, glm::vec3 lookAt, glm::vec3 point, glm::vec3 normal);
 	void updateSelection(glm::vec3 camPos, glm::vec3 lookAt);
-	bool collideObject(BlockPtr object, glm::vec3 position);
-	bool collideGround(glm::vec3 cam);
+	bool canBeCrossed(glm::ivec3 blockCoords);
+
 	// rendering
 	std::map<std::string, BlockPtr> getNeighbours(BlockPtr block);
 	void hideNeighboursFace(BlockPtr block);

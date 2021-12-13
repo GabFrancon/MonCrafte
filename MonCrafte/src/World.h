@@ -9,7 +9,8 @@ class World
 {
 private:
 	// chunks
-	unsigned int worldSize = 3;                    // in terms of number of chunks
+	int xLimit, yLimit, zLimit;
+	int worldSize = 3;                    // in terms of number of chunks
 	glm::ivec3 chunkSize = glm::ivec3(15, 25, 15); // in terms of number of blocks
 	glm::ivec2 currentChunk = glm::ivec2(0, 0);
 	std::vector < std::vector < ChunkPtr >> chunkMap;
@@ -40,7 +41,6 @@ public:
 	void addLight(glm::vec3 position, glm::vec3 color);
 	void destroyLight(unsigned int index);
 
-	bool collide(glm::vec3 camPosition);
 	void updateSelection(glm::vec3 camPos, glm::vec3 lookAt);
 	
 	void genWorld();
@@ -49,6 +49,11 @@ public:
 	void render(Shader groundShader,Shader skyShader, glm::vec3 camPos);
 	void clearBuffers();
 
+
+	bool collide(glm::vec3 cam);
+	glm::ivec3 toChunkCoord(glm::ivec3 pos, glm::ivec2 chunkPos);
+	glm::ivec2 toGridCoord(glm::ivec2 chunkCoord);
+	glm::ivec2 getAssociatedChunk(int x, int z);
 };
 
 #endif // !WORLD_H

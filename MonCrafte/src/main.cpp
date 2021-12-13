@@ -119,9 +119,6 @@ void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
         glfwSetWindowShouldClose(window, true);
     }
     world.updateSelection(camera.getPosition(), camera.getViewDirection());
-    // chunck detection
-    if(key == GLFW_KEY_W || key == GLFW_KEY_S || key == GLFW_KEY_D || key == GLFW_KEY_A)
-        world.updateCurrentChunk(camera.getPosition());
 }
 
 // Executed each time the mouse is mooved.
