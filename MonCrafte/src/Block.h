@@ -45,7 +45,7 @@ public:
 	{
 		for (auto& it : faceRendering)
 		{
-			if (it.second == true)
+			if(it.second == true)
 				return false;
 		}
 		return true;
@@ -53,14 +53,8 @@ public:
 
 	void render(Shader shader) override
 	{
-		if (!isEmpty())
-		{
-			if (!isHidden())
-			{
-				GameObject::render(shader);
-				geometry->draw(texture, faceRendering);
-			}
-		}
+		GameObject::render(shader);
+		geometry->draw(texture, faceRendering);
 	}
 
 	void freeBuffer() { geometry->freeBuffers(); }

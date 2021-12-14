@@ -118,7 +118,6 @@ void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
     else if (action == GLFW_PRESS && key == GLFW_KEY_ESCAPE) {
         glfwSetWindowShouldClose(window, true);
     }
-    world.updateSelection(camera.getPosition(), camera.getViewDirection());
 }
 
 // Executed each time the mouse is mooved.
@@ -136,7 +135,6 @@ void mouseCallback(GLFWwindow* window, double xpos, double ypos)
     lastY = ypos;
 
     camera.processMouseMoovement(xoffset, yoffset);
-    world.updateSelection(camera.getPosition(), camera.getViewDirection());
 }
 
 // Executed each time a mouse button is clicked.
@@ -146,8 +144,6 @@ void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
         world.destroyBlock();
     else if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS)
         world.addBlock(camera.getCurrentBlock());
-
-    world.updateSelection(camera.getPosition(), camera.getViewDirection());
 }
 
 
@@ -182,8 +178,8 @@ void initGLFW()
     glfwWindowHint(GLFW_RESIZABLE, GL_TRUE);
 
     // Create the window
-    size_t height = 2000;
-    size_t width = 1400;
+    size_t height = 1200;
+    size_t width = 800;
     window = glfwCreateWindow(height, width, "MonCrafte", nullptr, nullptr);
 
     if (!window)
@@ -312,6 +308,9 @@ void setupShaders()
 
 void update()
 {
+    camera.updateCamPos(window, currentFrame - lastFrame, world);
+    world.updateSelection(camera.getPosition(), camera.getViewDirection());
+
     // Measure speed
     nbFrames++;
     if ((double)currentFrame - lastTime >= 1.0) { // If last prinf() was more than 1 sec ago
@@ -324,7 +323,6 @@ void update()
 
 void render()
 {
-    camera.updateCamPos(window, currentFrame - lastFrame, world);
     camera.bindView(worldShader, playerShader, skyShader);
     world.bindLights(worldShader, playerShader);
 
