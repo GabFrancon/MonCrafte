@@ -4,6 +4,7 @@
 #include "Chunk.h"
 #include "Light.h"
 #include "Skybox.h"
+#include "PerlinNoise.h"
 
 struct Selection {
 	BlockPtr object;

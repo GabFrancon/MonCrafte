@@ -94,7 +94,6 @@ bool World::isInWorld(glm::vec3 objectPos)
 	return false;
 }
 
-
 glm::ivec2 World::getAssociatedChunk(int x, int z)
 {
 	int coordX = std::floor((x + (float)chunkSize.x / 2) / chunkSize.x);
@@ -289,6 +288,8 @@ void World::showNeighboursFace(BlockPtr block)
 void World::genWorld()
 {
 	glm::ivec2 offset = glm::ivec2(std::floor(worldSize / 2));
+	PerlinNoise* noise = new PerlinNoise(4, 4, 1, 94);
+	float increment = 0.01;
 
 	for(int i = 0 ; i < worldSize ; i++)
 		for (int j = 0; j < worldSize; j++)
@@ -297,13 +298,15 @@ void World::genWorld()
 			chunkMap[i][j] = std::make_shared<Chunk>();
 
 			for (int x = 0; x < chunkSize.x; x++) {
-				for (int y = 0; y < chunkSize.y; y++) {
-					for (int z = 0; z < chunkSize.z; z++)
+				for (int z = 0; z < chunkSize.z; z++) {
+					float height = (noise->Get((i*chunkSize.x + x) * increment, (j * chunkSize.z + z) * increment) + 1) * 5;
+
+					for (int y = 0; y < chunkSize.y; y++)
 					{
 						glm::ivec3 coords = glm::ivec3(x, y, z);
 						glm::ivec3 blockPos = toWorldCoord(coords, chunkPos);
-
-						if (y < 5)
+;						
+						if (y < height)
 							chunkMap[i][j]->setBlock(coords, std::make_shared<Block>(Type::SOLID, cube, blockPos, textures["stone"]));
 						else
 							chunkMap[i][j]->setBlock(coords, std::make_shared<Block>(Type::AIR, cube, blockPos, Texture()));
