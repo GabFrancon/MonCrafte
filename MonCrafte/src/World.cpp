@@ -18,7 +18,6 @@ void World::bindToGPU()
 	skybox.initBuffers();
 }
 
-
 BlockPtr World::getBlock(glm::vec3 blockPos, glm::ivec2 associatedChunk)
 {
 	glm::ivec2 coords = associatedChunk + glm::ivec2(std::floor(worldSize / 2));
@@ -165,7 +164,12 @@ float World::faceDistance(glm::vec3 camPos, glm::vec3 lookAt, glm::vec3 point, g
 
 void World::updateSelection(glm::vec3 camPos, glm::vec3 lookAt)
 {
-	Selection newSelection;
+	if (selection.isSelection)
+	{
+		selection.object->setPointed(false);
+		selection.distance = 8.f;
+		selection.isSelection = false;
+	}
 
 	int minX = std::max((int)std::trunc((lookAt.x >=0) * camPos.x + (lookAt.x <=0) * (camPos.x - 5)),-xLimit);
 	int maxX = std::min((int)std::trunc((lookAt.x <=0) * camPos.x + (lookAt.x >=0) * (camPos.x + 5)), xLimit);
@@ -184,38 +188,29 @@ void World::updateSelection(glm::vec3 camPos, glm::vec3 lookAt)
 				BlockPtr block = getBlock(pos, associatedChunk);
 				if(!(block->isEmpty() || block->isHidden()))
 				{
-					float frontDist  = faceDistance(camPos, lookAt, pos + glm::vec3(0.0, 0.0, 0.5), glm::vec3( 0.0, 0.0, 1.0));
-					float backDist   = faceDistance(camPos, lookAt, pos - glm::vec3(0.0, 0.0, 0.5), glm::vec3( 0.0, 0.0,-1.0));
-					float topDist    = faceDistance(camPos, lookAt, pos + glm::vec3(0.0, 0.5, 0.0), glm::vec3( 0.0, 1.0, 0.0));
-					float bottomDist = faceDistance(camPos, lookAt, pos - glm::vec3(0.0, 0.5, 0.0), glm::vec3( 0.0,-1.0, 0.0));
-					float rightDist  = faceDistance(camPos, lookAt, pos + glm::vec3(0.5, 0.0, 0.0), glm::vec3( 1.0, 0.0, 0.0));
-					float leftDist   = faceDistance(camPos, lookAt, pos - glm::vec3(0.5, 0.0, 0.0), glm::vec3(-1.0, 0.0, 0.0));
-					std::vector<float> dist{ frontDist, backDist, topDist, bottomDist, rightDist, leftDist };
-
+					std::vector<float> dist{ 
+						faceDistance(camPos, lookAt, pos + glm::vec3(0.0, 0.0, 0.5), glm::vec3(0.0, 0.0, 1.0)),
+						faceDistance(camPos, lookAt, pos - glm::vec3(0.0, 0.0, 0.5), glm::vec3(0.0, 0.0,-1.0)),
+						faceDistance(camPos, lookAt, pos + glm::vec3(0.0, 0.5, 0.0), glm::vec3(0.0, 1.0, 0.0)),
+						faceDistance(camPos, lookAt, pos - glm::vec3(0.0, 0.5, 0.0), glm::vec3(0.0,-1.0, 0.0)),
+						faceDistance(camPos, lookAt, pos + glm::vec3(0.5, 0.0, 0.0), glm::vec3(1.0, 0.0, 0.0)),
+						faceDistance(camPos, lookAt, pos - glm::vec3(0.5, 0.0, 0.0), glm::vec3(-1.0, 0.0, 0.0)) 
+					};
 					auto minD = std::min_element(dist.begin(), dist.end());
-					if (*minD < newSelection.distance)
+
+					if (*minD < selection.distance)
 					{
-						newSelection.isSelection = true;
-						newSelection.object = block;
-						newSelection.distance = *minD;
-						newSelection.faceID = std::distance(dist.begin(), minD);
+						selection.isSelection = true;
+						selection.object = block;
+						selection.distance = *minD;
+						selection.faceID = std::distance(dist.begin(), minD);
 					}
 				}
 			}
 		}
 	}
-	selectObject(newSelection);
-}
-
-void World::selectObject(Selection newSelection)
-{
-	if (selection.isSelection)
-		selection.object->setPointed(false);
-
-	if (newSelection.isSelection)
-		newSelection.object->setPointed(true);
-
-	selection = newSelection;
+	if(selection.isSelection)
+		selection.object->setPointed(true);
 }
 
 std::map<std::string, BlockPtr> World::getNeighbours(BlockPtr block)
@@ -288,29 +283,36 @@ void World::showNeighboursFace(BlockPtr block)
 void World::genWorld()
 {
 	glm::ivec2 offset = glm::ivec2(std::floor(worldSize / 2));
-	PerlinNoise* noise = new PerlinNoise(4, 4, 1, 94);
+
+	PerlinNoise* noise = new PerlinNoise(7, 4, 1, 93);
 	float increment = 0.01;
+	int seaLevel = 0;
 
 	for(int i = 0 ; i < worldSize ; i++)
 		for (int j = 0; j < worldSize; j++)
 		{
 			glm::ivec2 chunkPos = glm::ivec2(i, j) - offset;
-			chunkMap[i][j] = std::make_shared<Chunk>();
+			chunkMap[i][j] = std::make_shared<Chunk>(chunkSize);
 
 			for (int x = 0; x < chunkSize.x; x++) {
 				for (int z = 0; z < chunkSize.z; z++) {
-					float height = (noise->Get((i*chunkSize.x + x) * increment, (j * chunkSize.z + z) * increment) + 1) * 5;
+
+					float height = noise->Get((i*chunkSize.x + x) * increment, (j * chunkSize.z + z) * increment) * 7 + 3;
 
 					for (int y = 0; y < chunkSize.y; y++)
 					{
 						glm::ivec3 coords = glm::ivec3(x, y, z);
 						glm::ivec3 blockPos = toWorldCoord(coords, chunkPos);
-;						
-						if (y < height)
+						if (blockPos.y < height - 1)
 							chunkMap[i][j]->setBlock(coords, std::make_shared<Block>(Type::SOLID, cube, blockPos, textures["stone"]));
+						else if(blockPos.y < height)
+							chunkMap[i][j]->setBlock(coords, std::make_shared<Block>(Type::SOLID, cube, blockPos, textures["grass"]));
+						else if(blockPos.y <= seaLevel)
+							chunkMap[i][j]->setBlock(coords, std::make_shared<Block>(Type::SOLID, cube, blockPos, textures["water+"], true));
 						else
 							chunkMap[i][j]->setBlock(coords, std::make_shared<Block>(Type::AIR, cube, blockPos, Texture()));
 					}
+
 				}
 			}
 		}

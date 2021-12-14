@@ -42,9 +42,9 @@ private:
     float scroll = 4.0f;
     float aspectRatio = 1.f; 
     float mouseSensitivity = 0.05f;
-    float playerVelociy = 4.f;
+    float playerVelociy = 10.f;
     float near = 0.1f;                  // distance before which geometry is excluded from the rasterization process
-    float far = 50.1f;                  // distance after which the geometry is excluded from the rasterization process
+    float far = 75.1f;                  // distance after which the geometry is excluded from the rasterization process
     float yaw = -90.f;                  // yaw euler angle
     float pitch = 0.f;                  // pitch euler angle
 

@@ -18,8 +18,8 @@ class World
 private:
 	// chunks
 	int xLimit, yLimit, zLimit;
-	int worldSize = 3;                    // in terms of number of chunks
-	glm::ivec3 chunkSize = glm::ivec3(15, 25, 15); // in terms of number of blocks
+	int worldSize = 5;								// in terms of number of chunks
+	glm::ivec3 chunkSize = glm::ivec3(11, 25, 11);  // in terms of number of blocks
 	std::vector < std::vector < ChunkPtr >> chunkMap;
 	Selection selection;
 	CubePtr cube;
@@ -59,10 +59,9 @@ public:
 	void destroyLight(unsigned int index);
 
 	// collision and selection
-	bool collide(glm::vec3 cam);
+	bool  collide(glm::vec3 cam);
 	float faceDistance(glm::vec3 camPos, glm::vec3 lookAt, glm::vec3 point, glm::vec3 normal);
-	void updateSelection(glm::vec3 camPos, glm::vec3 lookAt);
-	void selectObject(Selection newSelection);
+	void  updateSelection(glm::vec3 camPos, glm::vec3 lookAt);
 
 	// generation and rendering
 	void genWorld();

@@ -6,11 +6,11 @@
 class Chunk
 {
 public:
-	Chunk() {
+	Chunk(glm::ivec3 size) : chunkSize(size) {
 		map = std::vector<std::vector<std::vector<BlockPtr>>>
-			(chunkSize.x, std::vector<std::vector<BlockPtr>>
-				(chunkSize.y, std::vector<BlockPtr>
-					(chunkSize.z, nullptr)));
+			(size.x, std::vector<std::vector<BlockPtr>>
+				(size.y, std::vector<BlockPtr>
+					(size.z, nullptr)));
 	}
 
 
@@ -39,7 +39,7 @@ public:
 	}
 
 private:
-	glm::ivec3 chunkSize = glm::ivec3(15, 25, 15); // in terms of number of blocks
+	glm::ivec3 chunkSize; // in terms of number of blocks
 	std::vector<std::vector<std::vector<BlockPtr>>> map;
 };
 
