@@ -202,16 +202,17 @@ void Chunk::updateSelection(glm::vec3 camPos, glm::vec3 lookAt)
 	float minDist = 10;
 
 	glm::ivec3 coords = toChunkCoord(camPos);
-	int minX = std::max(coords.x - 5, 0);
-	int maxX = std::min(coords.x + 6, chunkSize.x);
-	int minY = std::max(coords.y - 5, 0);
-	int maxY = std::min(coords.y + 6, chunkSize.y);
-	int minZ = std::max(coords.z - 5, 0);
-	int maxZ = std::min(coords.z + 6, chunkSize.z);
 
-	for (int x = minX ; x < maxX ; x++) {
-		for (int y = minY; y < maxY; y++) {
-			for (int z = minZ; z < maxZ ; z++)
+	int minX = (lookAt.x >=0) * coords.x + (lookAt.x < 0) * std::max(coords.x - 5, 0);
+	int maxX = (lookAt.x < 0) * coords.x + (lookAt.x >=0) * std::min(coords.x + 5, chunkSize.x - 1);
+	int minY = (lookAt.y >= 0) * coords.y + (lookAt.y < 0) * std::max(coords.y - 5, 0);
+	int maxY = (lookAt.y < 0) * coords.y + (lookAt.y >= 0) * std::min(coords.y + 5, chunkSize.y - 1);
+	int minZ = (lookAt.z >= 0) * coords.z + (lookAt.z < 0) * std::max(coords.z - 5, 0);
+	int maxZ = (lookAt.z < 0) * coords.z + (lookAt.z >= 0) * std::min(coords.z + 5, chunkSize.z - 1);
+
+	for (int x = minX ; x <= maxX ; x++) {
+		for (int y = minY; y <= maxY; y++) {
+			for (int z = minZ; z <= maxZ ; z++)
 			{
 				if (!map[x][y][z]->isEmpty() && !map[x][y][z]->isHidden())
 				{

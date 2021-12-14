@@ -71,12 +71,28 @@ glm::ivec3 World::toChunkCoord(glm::ivec3 pos, glm::ivec2 chunkPos)
 	return glm::ivec3(x, y, z);
 }
 
-glm::ivec2 World::toGridCoord(glm::ivec2 chunkCoord)
+bool World::isInWorld(glm::vec3 objectPos)
 {
-	int x = chunkCoord.x + std::floor(worldSize / 2);
-	int y = chunkCoord.y + std::floor(worldSize / 2);
-	return glm::ivec2(x, y);
+	if (-xLimit < objectPos.x && objectPos.x < xLimit)
+		if (-yLimit < objectPos.y && objectPos.y < zLimit)
+			if (-zLimit < objectPos.z && objectPos.z < zLimit)
+				return true;
+	return false;
 }
+
+
+glm::ivec2 World::cToChunkCoord(glm::ivec2 chunkCoord)
+{
+	int offset = std::floor(worldSize / 2);
+	return chunkCoord + glm::ivec2(offset);
+}
+
+glm::ivec2 World::cToWorldCoord(glm::ivec2 chunkCoord)
+{
+	int offset = std::floor(worldSize / 2);
+	return chunkCoord - glm::ivec2(offset);
+}
+
 
 glm::ivec2 World::getAssociatedChunk(int x, int z)
 {
@@ -101,7 +117,7 @@ bool World::collide(glm::vec3 cam)
 					if ((cam.y - 0.4 < y + 0.4) && (cam.y + 0.4 > y - 0.4))
 					{
 						glm::ivec2 associatedChunk = getAssociatedChunk(x, z);
-						glm::ivec2 coords = toGridCoord(associatedChunk);
+						glm::ivec2 coords = cToChunkCoord(associatedChunk);
 						if (!chunkMap[coords.x][coords.y]->canBeCrossed(toChunkCoord(glm::vec3(x, y, z), associatedChunk)))
 							return true;
 					}

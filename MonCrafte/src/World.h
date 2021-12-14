@@ -52,7 +52,9 @@ public:
 
 	bool collide(glm::vec3 cam);
 	glm::ivec3 toChunkCoord(glm::ivec3 pos, glm::ivec2 chunkPos);
-	glm::ivec2 toGridCoord(glm::ivec2 chunkCoord);
+	bool isInWorld(glm::vec3 objectPos);
+	glm::ivec2 cToChunkCoord(glm::ivec2 chunkCoord);
+	glm::ivec2 cToWorldCoord(glm::ivec2 chunkCoord);
 	glm::ivec2 getAssociatedChunk(int x, int z);
 };
 
