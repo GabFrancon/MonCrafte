@@ -26,9 +26,9 @@ float lastTime     = 0.f;
 int nbFrames       = 0;
 
 // mouse
-float lastX;
-float lastY;
-bool firstMouse = true;
+float lastX = 0.f;
+float lastY = 0.f;
+bool  firstMouse = true;
 
 GLuint load(const std::string& filename, bool withAlpha = false)
 {
@@ -313,8 +313,8 @@ void update()
 
     // Measure speed
     nbFrames++;
-    if ((double)currentFrame - lastTime >= 1.0) { // If last prinf() was more than 1 sec ago
-        // printf and reset timer
+    if ((double)currentFrame - lastTime >= 1.0)
+    {
         printf("%f ms/frame\n", 1000.0 / double(nbFrames));
         nbFrames = 0;
         lastTime += 1.0;
@@ -364,7 +364,7 @@ int main()
     // setup the camera (player + pointer)
     camera = Camera(
         world,
-        glm::vec3(0.0, 3.0, 0.0),  // position
+        glm::vec3(0.0, 10.0, 0.0),  // position
         glm::vec3(0.0, 0.0, -1.0), // front vector
         glm::vec3(0.0, 1.0, 0.0),  // up vector
         load("texture/font.png", true));

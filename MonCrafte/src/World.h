@@ -8,19 +8,24 @@
 
 struct Selection {
 	BlockPtr object;
-	bool isSelection = false;
-	unsigned int faceID = -1;
-	float distance = 10.0;
+	bool     isSelection = false;
+	int      faceID      = 0;
+	float    distance    = 10.0;
 };
 
 class World
 {
 private:
 	// chunks
-	int xLimit, yLimit, zLimit;
 	int worldSize = 5;								// in terms of number of chunks
-	glm::ivec3 chunkSize = glm::ivec3(11, 25, 11);  // in terms of number of blocks
-	std::vector < std::vector < ChunkPtr >> chunkMap;
+	glm::ivec3 chunkSize = glm::ivec3(15, 25, 15);  // in terms of number of blocks
+
+	int xLimit     = 0;
+	int yLimit     = 0;
+	int zLimit     = 0;
+	int chunkLimit = 0;
+
+	std::vector<ChunkPtr> chunkMap;
 	Selection selection;
 	CubePtr cube;
 
@@ -34,7 +39,7 @@ private:
 	Skybox skybox;
 
 public:
-	World() : xLimit(0), yLimit(0), zLimit(0) {};
+	World() {};
 	World(std::map<std::string, Texture> textureCollection, GLuint skyTexture);
 
 	CubePtr getCubeGeometry() { return cube; }
@@ -42,17 +47,17 @@ public:
 
 	// coordinates
 	glm::ivec3 toChunkCoord(glm::ivec3 pos, glm::ivec2 chunkPos);
-	glm::vec3 toWorldCoord(glm::ivec3 pos, glm::ivec2 chunkPos);
-	bool isInWorld(glm::vec3 objectPos);
+	glm::vec3  toWorldCoord(glm::ivec3 pos, glm::ivec2 chunkPos);
+	bool       isInWorld(glm::vec3 objectPos);
+	int        chunkIndex(int i, int j);
 
 	// blocks
-	void addBlock(std::string texName);
-	BlockPtr getBlock(glm::vec3 blockPos, glm::ivec2 associatedChunk);
-	glm::ivec2 getAssociatedChunk(int x, int z);
+	void     addBlock(std::string texName);
+	BlockPtr getBlock(glm::vec3 blockPos);
+	void     destroyBlock();
+	void     hideNeighboursFace(BlockPtr block);
+	void     showNeighboursFace(BlockPtr block);
 	std::map<std::string, BlockPtr> getNeighbours(BlockPtr block);
-	void hideNeighboursFace(BlockPtr block);
-	void showNeighboursFace(BlockPtr block);
-	void destroyBlock();
 
 	// lights
 	void addLight(glm::vec3 position, glm::vec3 color);

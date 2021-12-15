@@ -9,7 +9,6 @@ GameObject::GameObject(Type _type, glm::vec3 _position, Texture _texture, bool _
 void GameObject::updateTransMat()
 {
     transMat = glm::scale(glm::translate(glm::mat4(1.f), position), size);
-    modelNorm = glm::transpose(glm::inverse(transMat));
 }
 
 void GameObject::fillObject(Texture texture, bool transparent)
@@ -28,7 +27,6 @@ void GameObject::render(Shader shader)
 {
     // send uniform values to shaders
     shader.setMat4("transMat", transMat);
-    shader.setMat4("modelNorm", modelNorm);
     shader.setBool("pointed", pointed);
     shader.setVec3("lightCoeff", lightCoeff);
 }

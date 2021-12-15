@@ -13,6 +13,7 @@ public:
 
 	Light() {}
 
+	void setPosition(glm::vec3 pos) { position = pos; }
 	void bindLight(Shader worldShader, Shader playerShader)
 	{
 		worldShader.use();

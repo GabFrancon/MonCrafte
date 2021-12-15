@@ -13,7 +13,6 @@ protected:
 	glm::vec3 position;
 	glm::vec3 size;
 	glm::mat4 transMat;
-	glm::mat4 modelNorm;
 
 	Texture texture;
 
