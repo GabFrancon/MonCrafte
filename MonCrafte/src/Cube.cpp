@@ -165,7 +165,7 @@ void Cube::initBuffers()
     glGenBuffers(1, &texVbo);
     glBindBuffer(GL_ARRAY_BUFFER, texVbo);
     glBufferData(GL_ARRAY_BUFFER, textureBufferSize, vertexTextures.data(), GL_DYNAMIC_READ);
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(GLfloat), 0);
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), 0);
     glEnableVertexAttribArray(2);
 
     // deactivate the VAO for now

@@ -247,8 +247,6 @@ void World::hideNeighboursFace(BlockPtr block)
 		block->setFaceRendering("right", false);
 	if (pos.y == -yLimit)
 		block->setFaceRendering("bottom", false);
-	if (pos.y == yLimit)
-		block->setFaceRendering("top", false);
 	if (pos.z == -zLimit)
 		block->setFaceRendering("back", false);
 	if (pos.z == zLimit)
@@ -270,7 +268,7 @@ void World::genWorld()
 {
 	PerlinNoise* noise = new PerlinNoise(7, 4, 1, 93);
 	float increment = 0.01;
-	int seaLevel = -5;
+	int seaLevel = 0;
 
 	for (int i = -chunkLimit ; i <= chunkLimit ; i++)
 		for (int j = -chunkLimit ; j <= chunkLimit ; j++)
@@ -278,25 +276,35 @@ void World::genWorld()
 			int index = chunkIndex(i, j);
 			chunkMap[index] = std::make_shared<Chunk>(chunkSize);
 
-			auto it = textures.begin();
-			std::advance(it, rand() % textures.size());
-			while(it->first.back() == '+')
+			/*auto it = textures.begin();
+			do {
+				it = textures.begin();
 				std::advance(it, rand() % textures.size());
+			} while (it->first.back() == '+');*/
 
 			for (int x = 0; x < chunkSize.x; x++) {
 				for (int z = 0; z < chunkSize.z; z++) {
 
 					int heightMapX = (i + chunkLimit) * chunkSize.x + x;
 					int heightMapY = (j + chunkLimit) * chunkSize.z + z;
-					float height = noise->Get(heightMapX * increment, heightMapY * increment) * 10;
+					float height = noise->Get(heightMapX * increment, heightMapY * increment) * 13 + 3;
 
 					for (int y = 0; y < chunkSize.y; y++)
 					{
 						glm::ivec3 posInChunk = glm::ivec3(x, y, z);
 						glm::ivec3 blockPos = toWorldCoord(posInChunk, glm::ivec2(i, j));
 
-						if(blockPos.y < height)
-							chunkMap[index]->setBlock(posInChunk, std::make_shared<Block>(Type::SOLID, cube, blockPos, it->second));
+						if (blockPos.y < height -1)
+							chunkMap[index]->setBlock(posInChunk, std::make_shared<Block>(Type::SOLID, cube, blockPos, textures["dirt"]));
+
+						else if(blockPos.y < height && height < seaLevel)
+							chunkMap[index]->setBlock(posInChunk, std::make_shared<Block>(Type::SOLID, cube, blockPos, textures["gravel"]));
+
+						else if (blockPos.y < height && height >= seaLevel)
+							chunkMap[index]->setBlock(posInChunk, std::make_shared<Block>(Type::SOLID, cube, blockPos, textures["grass"]));
+
+						else if (blockPos.y <= seaLevel)
+							chunkMap[index]->setBlock(posInChunk, std::make_shared<Block>(Type::SOLID, cube, blockPos, textures["water+"], true));
 
 						else
 							chunkMap[index]->setBlock(posInChunk, std::make_shared<Block>(Type::AIR, cube, blockPos, Texture()));
@@ -318,7 +326,7 @@ void World::genWorld()
 		}
 
 	addLight(
-		glm::vec3(75.0, 75.0, -45.0),						      // position
+		glm::vec3(75.0, 75.0, -45.0),						  // position
 		glm::vec3(255.f / 255, 255.f / 255, 255.f / 255));    // color
 }
 
@@ -326,24 +334,29 @@ void World::genWorld()
 void World::bindLights(Shader groundShader, Shader playerShader)
 {
 	for (int j = 0; j < lights.size(); j++)
-	{
-		float time = glfwGetTime();
-		lights[j]->setPosition(glm::vec3(75 * std::cos(2 * M_PI * time / 10), 75 * std::sin(2 * M_PI * time / 10), -45.0));
 		lights[j]->bindLight(groundShader, playerShader);
-	}
 }
 
-void World::render(Shader groundShader, Shader skyShader, glm::vec3 camPos)
+void World::render(Shader groundShader, Shader skyShader, glm::vec3 camPos, glm::vec3 lookAt)
 {
 	// render skybox
-	// skybox.render(skyShader);
+	skybox.render(skyShader);
 
 	// render ground
 	groundShader.use();
 	std::vector<BlockPtr> transparentBlocks;
+	int chunkX = std::floor((camPos.x + (float)chunkSize.x / 2) / chunkSize.x);
+	int chunkZ = std::floor((camPos.z + (float)chunkSize.z / 2) / chunkSize.z);
 
-	for (int i = -chunkLimit ; i <= chunkLimit ; i++)
-		for (int j = -chunkLimit ; j <= chunkLimit ; j++)
+	int minX = std::max((lookAt.x > 0)*(chunkX-2) + (lookAt.x < 0)*(chunkX - renderRadius),-chunkLimit);
+	int maxX = std::min((lookAt.x < 0)*(chunkX+2) + (lookAt.x > 0)*(chunkX + renderRadius), chunkLimit);
+
+	int minZ = std::max((lookAt.z > 0)*(chunkZ-2) + (lookAt.z < 0)*(chunkZ - renderRadius),-chunkLimit);
+	int maxZ = std::min((lookAt.z < 0)*(chunkZ+2) + (lookAt.z > 0)*(chunkZ + renderRadius), chunkLimit);
+
+
+	for (int i = minX; i <= maxX ; i++)
+		for (int j = minZ ; j <= maxZ; j++)
 		{
 			int index = chunkIndex(i, j);
 
@@ -361,7 +374,6 @@ void World::render(Shader groundShader, Shader skyShader, glm::vec3 camPos)
 						}
 					}
 		}
-
 	// render transparent blocks last and in decrease order
 	if (transparentBlocks.size() != 0)
 	{

@@ -135,6 +135,10 @@ void mouseCallback(GLFWwindow* window, double xpos, double ypos)
     lastY = ypos;
 
     camera.processMouseMoovement(xoffset, yoffset);
+    glm::vec3 lookAt = camera.getViewDirection();
+    std::cout << "lookAt.x = " << lookAt.x << " gives coeff = " << 2 * std::asin(lookAt.x) / M_PI  << std::endl;
+    std::cout << "lookAt.z = " << lookAt.z << " gives coeff = " << 2 * std::asin(lookAt.z) / M_PI  << "\n" << std::endl;
+
 }
 
 // Executed each time a mouse button is clicked.
@@ -327,7 +331,7 @@ void render()
     world.bindLights(worldShader, playerShader);
 
     // render world
-    world.render(worldShader, skyShader, camera.getPosition());
+    world.render(worldShader, skyShader, camera.getPosition(), camera.getViewDirection());
 
     // render camera
     camera.render(playerShader, pointerShader, world);
