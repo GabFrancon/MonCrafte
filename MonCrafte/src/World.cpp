@@ -1,8 +1,9 @@
 #include "World.h"
 
-World::World(std::map<std::string, Texture> textureCollection, GLuint skyTexture) :
+World::World(std::map<std::string, Texture> textureCollection, GLuint textureArray, GLuint skyTexture) :
 	cube(std::make_shared<Cube>()),
 	textures(textureCollection),
+	texArray(textureArray),
 	skybox(Skybox(skyTexture))
 {
 	xLimit     = std::floor(chunkSize.x * worldSize / 2);
@@ -276,11 +277,8 @@ void World::genWorld()
 			int index = chunkIndex(i, j);
 			chunkMap[index] = std::make_shared<Chunk>(chunkSize);
 
-			/*auto it = textures.begin();
-			do {
-				it = textures.begin();
-				std::advance(it, rand() % textures.size());
-			} while (it->first.back() == '+');*/
+			auto it = textures.begin();
+			std::advance(it, rand() % textures.size());
 
 			for (int x = 0; x < chunkSize.x; x++) {
 				for (int z = 0; z < chunkSize.z; z++) {
@@ -295,7 +293,7 @@ void World::genWorld()
 						glm::ivec3 blockPos = toWorldCoord(posInChunk, glm::ivec2(i, j));
 
 						if (blockPos.y < height -1)
-							chunkMap[index]->setBlock(posInChunk, std::make_shared<Block>(Type::SOLID, cube, blockPos, textures["dirt"]));
+							chunkMap[index]->setBlock(posInChunk, std::make_shared<Block>(Type::SOLID, cube, blockPos, it->second));
 
 						/*else if(blockPos.y < height && height < seaLevel)
 							chunkMap[index]->setBlock(posInChunk, std::make_shared<Block>(Type::SOLID, cube, blockPos, textures["gravel"]));
@@ -347,7 +345,7 @@ void World::render(Shader groundShader, Shader skyShader, glm::vec3 camPos, glm:
 		for (int j = -chunkLimit; j <= chunkLimit; j++)
 		{
 			int index = chunkIndex(i, j);
-			chunkMap[index]->render(groundShader, textures["dirt"].get("side"));
+			chunkMap[index]->render(groundShader, texArray);
 		}
 		
 	// render ground

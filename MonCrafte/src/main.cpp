@@ -11,7 +11,6 @@ GLFWwindow* window = nullptr;
 GLuint program = 0;
 Camera camera;
 World world;
-std::map<std::string, Texture> textures;
 
 // shaders
 Shader worldShader;
@@ -29,6 +28,35 @@ int nbFrames       = 0;
 float lastX = 0.f;
 float lastY = 0.f;
 bool  firstMouse = true;
+
+// textures
+GLuint arrayTexture;
+std::map<std::string, Texture> textures;
+int currentSpotInArrayTexture = 0;
+
+void initializeTextureArray()
+{
+    glGenTextures(1, &arrayTexture);
+    glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D_ARRAY, arrayTexture);
+
+    glTexImage3D(GL_TEXTURE_2D_ARRAY,
+        0,
+        GL_RGB,
+        400,
+        400,
+        100,
+        0,
+        GL_RGB,
+        GL_UNSIGNED_BYTE,
+        NULL);
+
+    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
+}
 
 GLuint load(const std::string& filename, bool withAlpha = false)
 {
@@ -57,10 +85,21 @@ GLuint load(const std::string& filename, bool withAlpha = false)
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
     else
         glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
+    
+    glBindTexture(GL_TEXTURE_2D, 0);
+    glBindTexture(GL_TEXTURE_2D_ARRAY, arrayTexture);
+    glTexSubImage3D(GL_TEXTURE_2D_ARRAY,
+        0,                      //Mipmap number
+        0, 0, currentSpotInArrayTexture,   //xoffset, yoffset, zoffset
+        width, height, 1,                 //width, height, depth
+        GL_RGB,                //format
+        GL_UNSIGNED_BYTE,       //type
+        data); //pointer to data
+
+    glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
 
     // Freeing the now useless CPU memory
     stbi_image_free(data);
-    glBindTexture(GL_TEXTURE_2D, 0);
     return texID;
 }
 
@@ -227,17 +266,15 @@ void initOpenGL()
 
 void loadTextures()
 {
-    GLuint grassBottom = load("texture/grass/bottom.bmp");
+    /*
     GLuint grassTop = load("texture/grass/top.bmp");
     GLuint grassSide = load("texture/grass/side.bmp");
     GLuint stone = load("texture/stone.bmp");
     GLuint woodTop = load("texture/wood/top.bmp");
     GLuint woodSide = load("texture/wood/side.bmp");
     GLuint water = load("texture/water.png", true);
-    GLuint sand = load("texture/sand.bmp");
     GLuint woodplank = load("texture/woodplanck.bmp");
     GLuint brick = load("texture/brick.bmp");
-    GLuint gravel = load("texture/gravel.bmp");
     GLuint leaves = load("texture/leaves.png", true);
     GLuint select = load("texture/selection.png", true);
 
@@ -249,10 +286,6 @@ void loadTextures()
     grassTex.add("selection", select);
     textures["grass"] = grassTex;
 
-    Texture dirtTex(grassBottom);
-    dirtTex.add("selection", select);
-    textures["dirt"] = dirtTex;
-
     Texture woodTex(woodTop, woodTop, woodSide);
     woodTex.add("selection", select);
     textures["wood"] = woodTex;
@@ -260,10 +293,6 @@ void loadTextures()
     Texture waterTex(water);
     waterTex.add("selection", select);
     textures["water+"] = waterTex;
-
-    Texture sandTex(sand);
-    sandTex.add("selection", select);
-    textures["sand"] = sandTex;
 
     Texture woodplanckTex(woodplank);
     woodplanckTex.add("selection", select);
@@ -273,13 +302,21 @@ void loadTextures()
     brickTex.add("selection", select);
     textures["brick"] = brickTex;
 
-    Texture gravelTex(gravel);
-    gravelTex.add("selection", select);
-    textures["gravel"] = gravelTex;
-
     Texture leavesTex(leaves);
     leavesTex.add("selection", select);
-    textures["leaves+"] = leavesTex;
+    textures["leaves+"] = leavesTex;*/
+
+    Texture sandTex(load("texture/400x400/sand.png"));
+    sandTex.setLocationInArray(currentSpotInArrayTexture++);
+    textures["sand"] = sandTex;
+
+    Texture dirtTex(load("texture/400x400/dirt.png"));
+    dirtTex.setLocationInArray(currentSpotInArrayTexture++);
+    textures["dirt"] = dirtTex;
+
+    Texture gravelTex(load("texture/400x400/gravel.png"));
+    gravelTex.setLocationInArray(currentSpotInArrayTexture++);
+    textures["gravel"] = gravelTex;
 }
 
 void setupShaders()
@@ -294,8 +331,7 @@ void setupShaders()
     pointerShader.setInt("material.textureData", 0);
 
     worldShader.use();
-    worldShader.setInt("material.textureData", 0);
-    worldShader.setInt("material.textureSelect", 1);
+    worldShader.setInt("material.textureArray", 0);
 
     playerShader.use();
     playerShader.setInt("material.textureData", 0);
@@ -348,6 +384,7 @@ int main()
 {
     initGLFW();
     initOpenGL();
+    initializeTextureArray();
     loadTextures();
 
     std::vector<std::string> faces = {
@@ -359,7 +396,7 @@ int main()
     "texture/skybox/default/back.bmp" };
 
     // setup the world (ground + light)
-    world = World(textures, loadCubemap(faces));
+    world = World(textures, arrayTexture, loadCubemap(faces));
     world.genWorld();
 
     // setup the camera (player + pointer)

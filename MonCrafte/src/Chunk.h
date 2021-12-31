@@ -38,6 +38,14 @@ public:
 		glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), 0);
 		glEnableVertexAttribArray(2);
 
+		// layer
+		size_t layerBufferSize = sizeof(float) * types.size();
+		glGenBuffers(1, &lbo);
+		glBindBuffer(GL_ARRAY_BUFFER, lbo);
+		glBufferData(GL_ARRAY_BUFFER, layerBufferSize, types.data(), GL_DYNAMIC_READ);
+		glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, sizeof(float), 0);
+		glEnableVertexAttribArray(3);
+
 		glBindVertexArray(0);
 	}
 
@@ -115,6 +123,15 @@ public:
 									 1.0f, 1.0f,
 									 0.0f, 1.0f
 								});
+							types.insert(types.end(),
+								{
+									(float)block->getTexture().getLocationInArray(),
+									(float)block->getTexture().getLocationInArray(),
+									(float)block->getTexture().getLocationInArray(),
+									(float)block->getTexture().getLocationInArray(),
+									(float)block->getTexture().getLocationInArray(),
+									(float)block->getTexture().getLocationInArray()
+								});
 						}
 						if (block->isFaceVisible("left"))
 						{
@@ -144,6 +161,15 @@ public:
 									 0.0f, 1.0f,
 									 1.0f, 0.0f,
 									 0.0f, 0.0f
+								});
+							types.insert(types.end(),
+								{
+									(float)block->getTexture().getLocationInArray(),
+									(float)block->getTexture().getLocationInArray(),
+									(float)block->getTexture().getLocationInArray(),
+									(float)block->getTexture().getLocationInArray(),
+									(float)block->getTexture().getLocationInArray(),
+									(float)block->getTexture().getLocationInArray()
 								});
 						}
 						if (block->isFaceVisible("top"))
@@ -175,6 +201,15 @@ public:
 									 0.0f, 0.0f,
 									 0.0f, 1.0f
 								});
+							types.insert(types.end(),
+								{
+									(float)block->getTexture().getLocationInArray(),
+									(float)block->getTexture().getLocationInArray(),
+									(float)block->getTexture().getLocationInArray(),
+									(float)block->getTexture().getLocationInArray(),
+									(float)block->getTexture().getLocationInArray(),
+									(float)block->getTexture().getLocationInArray()
+								});
 						}
 						if (block->isFaceVisible("bottom"))
 						{
@@ -204,6 +239,15 @@ public:
 									 1.0f, 1.0f,
 									 0.0f, 1.0f,
 									 0.0f, 0.0f
+								});
+							types.insert(types.end(),
+								{
+									(float)block->getTexture().getLocationInArray(),
+									(float)block->getTexture().getLocationInArray(),
+									(float)block->getTexture().getLocationInArray(),
+									(float)block->getTexture().getLocationInArray(),
+									(float)block->getTexture().getLocationInArray(),
+									(float)block->getTexture().getLocationInArray()
 								});
 						}
 						if (block->isFaceVisible("front"))
@@ -235,6 +279,15 @@ public:
 									 1.0f, 1.0f,
 									 1.0f, 0.0f
 								});
+							types.insert(types.end(),
+								{
+									(float)block->getTexture().getLocationInArray(),
+									(float)block->getTexture().getLocationInArray(),
+									(float)block->getTexture().getLocationInArray(),
+									(float)block->getTexture().getLocationInArray(),
+									(float)block->getTexture().getLocationInArray(),
+									(float)block->getTexture().getLocationInArray()
+								});
 						}
 						if (block->isFaceVisible("back"))
 						{
@@ -265,6 +318,15 @@ public:
 									 1.0f, 1.0f,
 									 0.0f, 1.0f
 								});
+							types.insert(types.end(),
+								{
+									(float)block->getTexture().getLocationInArray(),
+									(float)block->getTexture().getLocationInArray(),
+									(float)block->getTexture().getLocationInArray(),
+									(float)block->getTexture().getLocationInArray(),
+									(float)block->getTexture().getLocationInArray(),
+									(float)block->getTexture().getLocationInArray()
+								});
 						}
 					}
 				}
@@ -285,14 +347,19 @@ public:
 		glBindBuffer(GL_ARRAY_BUFFER, ebo);
 		glBufferData(GL_ARRAY_BUFFER, textureBufferSize, uvs.data(), GL_DYNAMIC_READ);
 
+		// layer
+		size_t layerBufferSize = sizeof(float) * types.size();
+		glBindBuffer(GL_ARRAY_BUFFER, lbo);
+		glBufferData(GL_ARRAY_BUFFER, layerBufferSize, types.data(), GL_DYNAMIC_READ);
+
 		glBindVertexArray(0);
 	}
 
-	void render(Shader shader, GLuint texture)
+	void render(Shader shader, GLuint texArray)
 	{
 		shader.use();
 		glActiveTexture(GL_TEXTURE0);
-		glBindTexture(GL_TEXTURE_2D, texture);
+		glBindTexture(GL_TEXTURE_2D_ARRAY, texArray);
 		glBindVertexArray(vao);
 		glDrawArrays(GL_TRIANGLES, 0, vertices.size());
 	}
@@ -304,9 +371,11 @@ private:
 	GLuint vbo = 0;
 	GLuint ebo = 0;
 	GLuint nbo = 0;
+	GLuint lbo = 0;
 	std::vector<float> vertices;
 	std::vector<float> normals;
 	std::vector<float> uvs;
+	std::vector<float> types;
 };
 
 typedef std::shared_ptr<Chunk> ChunkPtr;

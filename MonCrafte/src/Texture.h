@@ -22,6 +22,7 @@ class Texture
 {
 private:
 	std::map<std::string, GLuint> collection;
+	int locationInArray = -1;
 
 public:
 	Texture() {}
@@ -37,11 +38,10 @@ public:
 		add("bottom", bottom);
 		add("side", side);
 	}
-
 	void add(std::string name, GLuint texture) { collection[name] = texture; }
-
+	void setLocationInArray(int pos) { locationInArray = pos; }
 	GLuint get(std::string name) { return collection[name]; }
-
+	int getLocationInArray() { return locationInArray; }
 };
 #endif // !TEXTURE_H
 

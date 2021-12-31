@@ -17,7 +17,7 @@ class World
 {
 private:
 	// chunks
-	int worldSize = 11;								// in terms of number of chunks
+	int worldSize = 15;								// in terms of number of chunks
 	int renderRadius = 4;							// in terms of number of chunks
 	glm::ivec3 chunkSize = glm::ivec3(15, 25, 15);  // in terms of number of blocks
 
@@ -35,13 +35,14 @@ private:
 
 	// textures
 	std::map<std::string, Texture> textures;
+	GLuint texArray = 0;
 
 	// skybox
 	Skybox skybox;
 
 public:
 	World() {};
-	World(std::map<std::string, Texture> textureCollection, GLuint skyTexture);
+	World(std::map<std::string, Texture> textureCollection, GLuint textureArray, GLuint skyTexture);
 
 	CubePtr getCubeGeometry() { return cube; }
 	Texture getTexture(std::string name) { return textures[name]; }
