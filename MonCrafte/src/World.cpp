@@ -78,7 +78,7 @@ void World::addBlock(std::string texName)
 			BlockPtr newBlock = getBlock(position);
 			newBlock->fillObject(textures[texName], texName.back() == '+');
 			hideNeighboursFace(newBlock);
-		}	
+		}
 	}
 }
 
@@ -297,14 +297,14 @@ void World::genWorld()
 						if (blockPos.y < height -1)
 							chunkMap[index]->setBlock(posInChunk, std::make_shared<Block>(Type::SOLID, cube, blockPos, textures["dirt"]));
 
-						else if(blockPos.y < height && height < seaLevel)
+						/*else if(blockPos.y < height && height < seaLevel)
 							chunkMap[index]->setBlock(posInChunk, std::make_shared<Block>(Type::SOLID, cube, blockPos, textures["gravel"]));
 
 						else if (blockPos.y < height && height >= seaLevel)
 							chunkMap[index]->setBlock(posInChunk, std::make_shared<Block>(Type::SOLID, cube, blockPos, textures["grass"]));
 
 						else if (blockPos.y <= seaLevel)
-							chunkMap[index]->setBlock(posInChunk, std::make_shared<Block>(Type::SOLID, cube, blockPos, textures["water+"], true));
+							chunkMap[index]->setBlock(posInChunk, std::make_shared<Block>(Type::SOLID, cube, blockPos, textures["water+"], true));*/
 
 						else
 							chunkMap[index]->setBlock(posInChunk, std::make_shared<Block>(Type::AIR, cube, blockPos, Texture()));
@@ -323,11 +323,12 @@ void World::genWorld()
 				for (int y = 0; y < chunkSize.y; y++)
 					for (int z = 0; z < chunkSize.z; z++)
 						hideNeighboursFace(chunkMap[index]->getBlock(glm::ivec3(x, y, z)));
+			chunkMap[index]->generateChunk();
 		}
 
 	addLight(
-		glm::vec3(75.0, 75.0, -45.0),						  // position
-		glm::vec3(255.f / 255, 255.f / 255, 255.f / 255));    // color
+		glm::vec3(0.0, 50.0, 0.0),						      // position
+		glm::vec3(1.f, 1.f, 1.f));						      // color
 }
 
 
@@ -342,8 +343,15 @@ void World::render(Shader groundShader, Shader skyShader, glm::vec3 camPos, glm:
 	// render skybox
 	skybox.render(skyShader);
 
+	for (int i = -chunkLimit; i <= chunkLimit; i++)
+		for (int j = -chunkLimit; j <= chunkLimit; j++)
+		{
+			int index = chunkIndex(i, j);
+			chunkMap[index]->render(groundShader, textures["dirt"].get("side"));
+		}
+		
 	// render ground
-	groundShader.use();
+	/*groundShader.use();
 	std::vector<BlockPtr> transparentBlocks;
 	int chunkX = std::floor((camPos.x + (float)chunkSize.x / 2) / chunkSize.x);
 	int chunkZ = std::floor((camPos.z + (float)chunkSize.z / 2) / chunkSize.z);
@@ -385,7 +393,7 @@ void World::render(Shader groundShader, Shader skyShader, glm::vec3 camPos, glm:
 		}
 		for (std::map<float, BlockPtr>::reverse_iterator it = sorted.rbegin(); it != sorted.rend(); ++it)
 			it->second->render(groundShader);
-	}
+	}*/
 }
 
 void World::clearBuffers()

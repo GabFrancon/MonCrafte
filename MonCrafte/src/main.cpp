@@ -92,9 +92,9 @@ GLuint loadCubemap(std::vector<std::string> faces, bool withAlpha = false)
     }
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
     glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_REPEAT);
 
     return textureID;
 }
@@ -135,10 +135,6 @@ void mouseCallback(GLFWwindow* window, double xpos, double ypos)
     lastY = ypos;
 
     camera.processMouseMoovement(xoffset, yoffset);
-    glm::vec3 lookAt = camera.getViewDirection();
-    std::cout << "lookAt.x = " << lookAt.x << " gives coeff = " << 2 * std::asin(lookAt.x) / M_PI  << std::endl;
-    std::cout << "lookAt.z = " << lookAt.z << " gives coeff = " << 2 * std::asin(lookAt.z) / M_PI  << "\n" << std::endl;
-
 }
 
 // Executed each time a mouse button is clicked.
@@ -288,7 +284,8 @@ void loadTextures()
 
 void setupShaders()
 {
-    worldShader   = Shader("shader/vertexShader.glsl", "shader/fragmentShader.glsl");
+    worldShader   = Shader("shader/chunkVertexShader.glsl", "shader/chunkFragShader.glsl");
+    // worldShader   = Shader("shader/vertexShader.glsl", "shader/fragmentShader.glsl");
     playerShader  = Shader("shader/playerVertexShader.glsl", "shader/playerFragShader.glsl");
     pointerShader = Shader("shader/textVertexShader.glsl", "shader/textFragShader.glsl");
     skyShader     = Shader("shader/skyboxVertexShader.glsl", "shader/skyboxFragShader.glsl");

@@ -114,9 +114,11 @@ void Camera::bindView(Shader worldShader, Shader playerShader, Shader skyShader)
     glm::mat4 troncatedView = glm::mat4(glm::mat3(viewMat));
 
     worldShader.use();
+    worldShader.setVec3("camPos", camPos);
     worldShader.setMat4("viewMat", viewMat);
 
     playerShader.use();
+    playerShader.setVec3("camPos", camPos);
     playerShader.setMat4("viewMat", troncatedView);
 
     skyShader.use();

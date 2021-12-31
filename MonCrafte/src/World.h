@@ -17,9 +17,9 @@ class World
 {
 private:
 	// chunks
-	int worldSize = 15;								// in terms of number of chunks
+	int worldSize = 11;								// in terms of number of chunks
 	int renderRadius = 4;							// in terms of number of chunks
-	glm::ivec3 chunkSize = glm::ivec3(11, 35, 11);  // in terms of number of blocks
+	glm::ivec3 chunkSize = glm::ivec3(15, 25, 15);  // in terms of number of blocks
 
 	int xLimit     = 0;
 	int yLimit     = 0;

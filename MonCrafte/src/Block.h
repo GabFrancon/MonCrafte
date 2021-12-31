@@ -15,6 +15,7 @@ public:
 		geometry(cube),
 		faceRendering{ {"right", !isEmpty()}, {"left",!isEmpty()}, {"top", !isEmpty()}, {"bottom", !isEmpty()}, {"front", !isEmpty()}, {"back", !isEmpty()} } {}
 
+	bool isFaceVisible(std::string name) { return faceRendering[name]; }
 	void setFaceRendering(std::string name, bool beRendered) { faceRendering[name] = beRendered; }
 
 	std::string getReversedFace(std::string name)
