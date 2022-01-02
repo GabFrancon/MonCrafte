@@ -277,15 +277,14 @@ void World::genWorld()
 			int index = chunkIndex(i, j);
 			chunkMap[index] = std::make_shared<Chunk>(chunkSize);
 
-			auto it = textures.begin();
-			std::advance(it, rand() % textures.size());
-
 			for (int x = 0; x < chunkSize.x; x++) {
 				for (int z = 0; z < chunkSize.z; z++) {
 
 					int heightMapX = (i + chunkLimit) * chunkSize.x + x;
 					int heightMapY = (j + chunkLimit) * chunkSize.z + z;
 					float height = noise->Get(heightMapX * increment, heightMapY * increment) * 13 + 3;
+					/*auto it = textures.begin();
+					std::advance(it, rand() % textures.size());*/
 
 					for (int y = 0; y < chunkSize.y; y++)
 					{
@@ -293,21 +292,20 @@ void World::genWorld()
 						glm::ivec3 blockPos = toWorldCoord(posInChunk, glm::ivec2(i, j));
 
 						if (blockPos.y < height -1)
-							chunkMap[index]->setBlock(posInChunk, std::make_shared<Block>(Type::SOLID, cube, blockPos, it->second));
+							chunkMap[index]->setBlock(posInChunk, std::make_shared<Block>(Type::SOLID, cube, blockPos, textures["dirt"]));
 
-						/*else if(blockPos.y < height && height < seaLevel)
+						else if(blockPos.y < height && height < seaLevel)
 							chunkMap[index]->setBlock(posInChunk, std::make_shared<Block>(Type::SOLID, cube, blockPos, textures["gravel"]));
 
 						else if (blockPos.y < height && height >= seaLevel)
-							chunkMap[index]->setBlock(posInChunk, std::make_shared<Block>(Type::SOLID, cube, blockPos, textures["grass"]));
+							chunkMap[index]->setBlock(posInChunk, std::make_shared<Block>(Type::SOLID, cube, blockPos, textures["dirt"]));
 
 						else if (blockPos.y <= seaLevel)
-							chunkMap[index]->setBlock(posInChunk, std::make_shared<Block>(Type::SOLID, cube, blockPos, textures["water+"], true));*/
+							chunkMap[index]->setBlock(posInChunk, std::make_shared<Block>(Type::SOLID, cube, blockPos, textures["water+"], true));
 
 						else
 							chunkMap[index]->setBlock(posInChunk, std::make_shared<Block>(Type::AIR, cube, blockPos, Texture()));
 					}
-
 				}
 			}
 		}
@@ -341,57 +339,24 @@ void World::render(Shader groundShader, Shader skyShader, glm::vec3 camPos, glm:
 	// render skybox
 	skybox.render(skyShader);
 
+	// render ground
+	std::map<float, ChunkPtr> transparentChunks;
 	for (int i = -chunkLimit; i <= chunkLimit; i++)
 		for (int j = -chunkLimit; j <= chunkLimit; j++)
 		{
-			int index = chunkIndex(i, j);
-			chunkMap[index]->render(groundShader, texArray);
+			ChunkPtr chunk = chunkMap[chunkIndex(i, j)];
+			if (chunk->isTransparent())
+			{
+				float distance = glm::length(glm::vec2(std::abs(camPos.x - i), std::abs(camPos.z - j)));
+				transparentChunks[distance] = chunk;
+			}
+			else
+				chunk->render(groundShader, texArray);
 		}
-		
-	// render ground
-	/*groundShader.use();
-	std::vector<BlockPtr> transparentBlocks;
-	int chunkX = std::floor((camPos.x + (float)chunkSize.x / 2) / chunkSize.x);
-	int chunkZ = std::floor((camPos.z + (float)chunkSize.z / 2) / chunkSize.z);
-
-	int minX = std::max((lookAt.x > 0)*(chunkX-2) + (lookAt.x < 0)*(chunkX - renderRadius),-chunkLimit);
-	int maxX = std::min((lookAt.x < 0)*(chunkX+2) + (lookAt.x > 0)*(chunkX + renderRadius), chunkLimit);
-
-	int minZ = std::max((lookAt.z > 0)*(chunkZ-2) + (lookAt.z < 0)*(chunkZ - renderRadius),-chunkLimit);
-	int maxZ = std::min((lookAt.z < 0)*(chunkZ+2) + (lookAt.z > 0)*(chunkZ + renderRadius), chunkLimit);
-
-
-	for (int i = minX; i <= maxX ; i++)
-		for (int j = minZ ; j <= maxZ; j++)
-		{
-			int index = chunkIndex(i, j);
-
-			for (int x = 0; x < chunkSize.x; x++)
-				for (int y = 0; y < chunkSize.y; y++)
-					for (int z = 0; z < chunkSize.z; z++)
-					{
-						BlockPtr block = chunkMap[index]->getBlock(glm::ivec3(x, y, z));
-						if (!block->isEmpty() && !block->isHidden())
-						{
-							if (block->isTransparent())
-								transparentBlocks.push_back(block);
-							else
-								block->render(groundShader);
-						}
-					}
-		}
-	// render transparent blocks last and in decrease order
-	if (transparentBlocks.size() != 0)
-	{
-		std::map<float, BlockPtr> sorted;
-		for (BlockPtr block : transparentBlocks)
-		{
-			float distance = glm::length(camPos - block->getPosition());
-			sorted[distance] = block;
-		}
-		for (std::map<float, BlockPtr>::reverse_iterator it = sorted.rbegin(); it != sorted.rend(); ++it)
-			it->second->render(groundShader);
-	}*/
+	// render transparent chunk last and in decrease order
+	for (std::map<float, ChunkPtr>::reverse_iterator it = transparentChunks.rbegin(); it != transparentChunks.rend(); ++it)
+		it->second->render(groundShader, texArray);
+	
 }
 
 void World::clearBuffers()

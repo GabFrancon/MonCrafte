@@ -59,6 +59,8 @@ public:
 		return blockMap[blockIndex(blockCoords.x, blockCoords.y, blockCoords.z)];
 	}
 
+	bool isTransparent() { return hasTransparency; }
+
 	int blockIndex(int x, int y, int z)
 	{
 		return x + y * chunkSize.x + z * chunkSize.x * chunkSize.y;
@@ -81,6 +83,7 @@ public:
 	void generateChunk()
 	{
 		vertices.clear();
+		hasTransparency = false;
 
 		for(int x = 0 ; x < chunkSize.x ; x++)
 			for (int y = 0; y < chunkSize.y; y++)
@@ -89,6 +92,9 @@ public:
 					BlockPtr block = getBlock(glm::ivec3(x, y, z));
 					if (!block->isEmpty() && !block->isHidden())
 					{
+						if (block->isTransparent())
+							hasTransparency = true;
+
 						glm::vec3 position = block->getPosition();
 						float xoffset = position.x;
 						float yoffset = position.y;
@@ -367,6 +373,8 @@ public:
 private:
 	glm::ivec3 chunkSize; // in terms of number of blocks
 	std::vector<BlockPtr> blockMap;
+	bool hasTransparency = false;
+
 	GLuint vao = 0;
 	GLuint vbo = 0;
 	GLuint ebo = 0;

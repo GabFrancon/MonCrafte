@@ -174,39 +174,25 @@ void Cube::initBuffers()
 
 void Cube::draw(Texture texture, std::map<std::string, bool> facesRendering)
 {
-    glActiveTexture(GL_TEXTURE1);
-    glBindTexture(GL_TEXTURE_2D, texture.get("selection"));
-
     glActiveTexture(GL_TEXTURE0);
+    glBindTexture(GL_TEXTURE_2D, texture.getTexID());
+
     bindBuffers();
     if (facesRendering["left"])
-    {
-        glBindTexture(GL_TEXTURE_2D, texture.get("side"));
         glDrawArrays(GL_TRIANGLES, 0, 6);
-    }
+    
     if (facesRendering["right"])
-    {
-        glBindTexture(GL_TEXTURE_2D, texture.get("side"));
         glDrawArrays(GL_TRIANGLES, 6, 6);
-    }
+    
     if (facesRendering["bottom"])
-    {
-        glBindTexture(GL_TEXTURE_2D, texture.get("bottom"));
         glDrawArrays(GL_TRIANGLES, 12, 6);
-    }
+    
     if (facesRendering["top"])
-    {
-        glBindTexture(GL_TEXTURE_2D, texture.get("top"));
         glDrawArrays(GL_TRIANGLES, 18, 6);
-    }
+    
     if (facesRendering["back"])
-    {
-        glBindTexture(GL_TEXTURE_2D, texture.get("side"));
         glDrawArrays(GL_TRIANGLES, 24, 6);
-    }
+    
     if (facesRendering["front"])
-    {
-        glBindTexture(GL_TEXTURE_2D, texture.get("side"));
         glDrawArrays(GL_TRIANGLES, 30, 6);
-    }
 }

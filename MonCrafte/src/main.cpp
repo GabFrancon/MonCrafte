@@ -42,12 +42,12 @@ void initializeTextureArray()
 
     glTexImage3D(GL_TEXTURE_2D_ARRAY,
         0,
-        GL_RGB,
-        400,
-        400,
+        GL_RGBA,
+        512,
+        512,
         100,
         0,
-        GL_RGB,
+        GL_RGBA,
         GL_UNSIGNED_BYTE,
         NULL);
 
@@ -58,8 +58,9 @@ void initializeTextureArray()
     glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
 }
 
-GLuint load(const std::string& filename, bool withAlpha = false)
+void loadTexture(const std::string& filename, const std::string& name)
 {
+    Texture tex = Texture();
     int width, height, numComponents;
 
     // Loading the image in CPU memory using stb_image
@@ -81,26 +82,26 @@ GLuint load(const std::string& filename, bool withAlpha = false)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
     // fills the GPU texture with the data stored in the CPU image
-    if (withAlpha)
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-    else
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-    
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);  
     glBindTexture(GL_TEXTURE_2D, 0);
+
+    // adds the texture to the array
     glBindTexture(GL_TEXTURE_2D_ARRAY, arrayTexture);
     glTexSubImage3D(GL_TEXTURE_2D_ARRAY,
         0,                      //Mipmap number
         0, 0, currentSpotInArrayTexture,   //xoffset, yoffset, zoffset
         width, height, 1,                 //width, height, depth
-        GL_RGB,                //format
+        GL_RGBA,                //format
         GL_UNSIGNED_BYTE,       //type
         data); //pointer to data
 
-    glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
+    tex.setTexID(texID);
+    tex.setLocationInArray(currentSpotInArrayTexture++);
+    textures[name] = tex;
 
     // Freeing the now useless CPU memory
+    glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
     stbi_image_free(data);
-    return texID;
 }
 
 GLuint loadCubemap(std::vector<std::string> faces, bool withAlpha = false)
@@ -266,63 +267,20 @@ void initOpenGL()
 
 void loadTextures()
 {
-    /*
-    GLuint grassTop = load("texture/grass/top.bmp");
-    GLuint grassSide = load("texture/grass/side.bmp");
-    GLuint stone = load("texture/stone.bmp");
-    GLuint woodTop = load("texture/wood/top.bmp");
-    GLuint woodSide = load("texture/wood/side.bmp");
-    GLuint water = load("texture/water.png", true);
-    GLuint woodplank = load("texture/woodplanck.bmp");
-    GLuint brick = load("texture/brick.bmp");
-    GLuint leaves = load("texture/leaves.png", true);
-    GLuint select = load("texture/selection.png", true);
-
-    Texture stoneTex(stone);
-    stoneTex.add("selection", select);
-    textures["stone"] = stoneTex;
-
-    Texture grassTex(grassTop, grassBottom, grassSide);
-    grassTex.add("selection", select);
-    textures["grass"] = grassTex;
-
-    Texture woodTex(woodTop, woodTop, woodSide);
-    woodTex.add("selection", select);
-    textures["wood"] = woodTex;
-
-    Texture waterTex(water);
-    waterTex.add("selection", select);
-    textures["water+"] = waterTex;
-
-    Texture woodplanckTex(woodplank);
-    woodplanckTex.add("selection", select);
-    textures["woodplanck"] = woodplanckTex;
-
-    Texture brickTex(brick);
-    brickTex.add("selection", select);
-    textures["brick"] = brickTex;
-
-    Texture leavesTex(leaves);
-    leavesTex.add("selection", select);
-    textures["leaves+"] = leavesTex;*/
-
-    Texture sandTex(load("texture/400x400/sand.png"));
-    sandTex.setLocationInArray(currentSpotInArrayTexture++);
-    textures["sand"] = sandTex;
-
-    Texture dirtTex(load("texture/400x400/dirt.png"));
-    dirtTex.setLocationInArray(currentSpotInArrayTexture++);
-    textures["dirt"] = dirtTex;
-
-    Texture gravelTex(load("texture/400x400/gravel.png"));
-    gravelTex.setLocationInArray(currentSpotInArrayTexture++);
-    textures["gravel"] = gravelTex;
+    loadTexture("texture/512x512/sand.bmp", "sand");
+    loadTexture("texture/512x512/dirt.bmp", "dirt");
+    loadTexture("texture/512x512/gravel.bmp", "gravel");
+    loadTexture("texture/512x512/brick.bmp", "brick");
+    loadTexture("texture/512x512/woodplanck.bmp", "woodplanck");
+    loadTexture("texture/512x512/stone.bmp", "stone");
+    loadTexture("texture/512x512/water.bmp", "water+");
+    loadTexture("texture/512x512/leaves.bmp", "leaves+");
+    loadTexture("texture/512x512/font.bmp", "font+");
 }
 
 void setupShaders()
 {
     worldShader   = Shader("shader/chunkVertexShader.glsl", "shader/chunkFragShader.glsl");
-    // worldShader   = Shader("shader/vertexShader.glsl", "shader/fragmentShader.glsl");
     playerShader  = Shader("shader/playerVertexShader.glsl", "shader/playerFragShader.glsl");
     pointerShader = Shader("shader/textVertexShader.glsl", "shader/textFragShader.glsl");
     skyShader     = Shader("shader/skyboxVertexShader.glsl", "shader/skyboxFragShader.glsl");
@@ -405,20 +363,17 @@ int main()
         glm::vec3(0.0, 10.0, 0.0),  // position
         glm::vec3(0.0, 0.0, -1.0), // front vector
         glm::vec3(0.0, 1.0, 0.0),  // up vector
-        load("texture/font.png", true));
+        textures["font+"].getTexID());
 
     camera.setAspectRatio(window);
-
-    camera.insertBlock("grass", 0);
-    camera.insertBlock("stone", 1);
-    camera.insertBlock("dirt", 2);
-    camera.insertBlock("wood", 3);
-    camera.insertBlock("water+", 4);
-    camera.insertBlock("sand", 5);
-    camera.insertBlock("woodplanck", 6);
-    camera.insertBlock("brick", 7);
-    camera.insertBlock("gravel", 8);
-    camera.insertBlock("leaves+", 9);
+    camera.insertBlock("sand", 0);
+    camera.insertBlock("dirt", 1);
+    camera.insertBlock("gravel", 2);
+    camera.insertBlock("woodplanck", 3);
+    camera.insertBlock("brick", 4);
+    camera.insertBlock("water+", 5);
+    camera.insertBlock("leaves+", 6);
+    camera.insertBlock("stone", 7);
 
     // finally send all the data to the shaders
     setupShaders();
