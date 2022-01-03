@@ -6,13 +6,11 @@
 class Block : public GameObject
 {
 private:
-	CubePtr geometry;
 	std::map<std::string, bool> faceRendering;
 
 public:
-	Block(Type _type, CubePtr cube, glm::vec3 _position, Texture _texture, bool _transparent = 0)
+	Block(Type _type, glm::vec3 _position, Texture _texture, bool _transparent = 0)
 		: GameObject(_type, _position, _texture, _transparent),
-		geometry(cube),
 		faceRendering{ {"right", !isEmpty()}, {"left",!isEmpty()}, {"top", !isEmpty()}, {"bottom", !isEmpty()}, {"front", !isEmpty()}, {"back", !isEmpty()} } {}
 
 	bool isFaceVisible(std::string name) { return faceRendering[name]; }
@@ -52,13 +50,231 @@ public:
 		return true;
 	}
 
-	void render(Shader shader) override
+	void addGeometry(
+		std::vector<float> &vertices, 
+		std::vector<float> &normals, 
+		std::vector<float> &uvs, 
+		std::vector<float> &layers)
 	{
-		GameObject::render(shader);
-		geometry->draw(texture, faceRendering);
-	}
+		float xoffset = position.x;
+		float yoffset = position.y;
+		float zoffset = position.z;
 
-	void freeBuffer() { geometry->freeBuffers(); }
+		float sideTexLocation = (float)texture.getLocationInArray(0);
+		float topTexLocation = (float)texture.getLocationInArray(1);
+		float bottomTexLocation = (float)texture.getLocationInArray(2);
+
+		if (isFaceVisible("right"))
+		{
+			vertices.insert(vertices.end(), {
+					0.5f + xoffset, 0.5f + yoffset, 0.5f + zoffset,
+					0.5f + xoffset,-0.5f + yoffset,-0.5f + zoffset,
+					0.5f + xoffset, 0.5f + yoffset,-0.5f + zoffset,
+					0.5f + xoffset, 0.5f + yoffset, 0.5f + zoffset,
+					0.5f + xoffset,-0.5f + yoffset, 0.5f + zoffset,
+					0.5f + xoffset,-0.5f + yoffset,-0.5f + zoffset
+				});
+			normals.insert(normals.end(), {
+					1.0f, 0.0f, 0.0f,
+					1.0f, 0.0f, 0.0f,
+					1.0f, 0.0f, 0.0f,
+					1.0f, 0.0f, 0.0f,
+					1.0f, 0.0f, 0.0f,
+					1.0f, 0.0f, 0.0f
+				});
+			uvs.insert(uvs.end(), {
+					1.0f, 0.0f,
+					0.0f, 1.0f,
+					0.0f, 0.0f,
+					1.0f, 0.0f,
+					1.0f, 1.0f,
+					0.0f, 1.0f
+				});
+			layers.insert(layers.end(), {
+					sideTexLocation,
+					sideTexLocation,
+					sideTexLocation,
+					sideTexLocation,
+					sideTexLocation,
+					sideTexLocation
+				});
+		}
+		if (isFaceVisible("left"))
+		{
+			vertices.insert(vertices.end(), {
+					-0.5f + xoffset,-0.5f + yoffset,-0.5f + zoffset,
+					-0.5f + xoffset,-0.5f + yoffset, 0.5f + zoffset,
+					-0.5f + xoffset, 0.5f + yoffset, 0.5f + zoffset,
+					-0.5f + xoffset,-0.5f + yoffset,-0.5f + zoffset,
+					-0.5f + xoffset, 0.5f + yoffset, 0.5f + zoffset,
+					-0.5f + xoffset, 0.5f + yoffset,-0.5f + zoffset
+				});
+			normals.insert(normals.end(), {
+					-1.0f, 0.0f, 0.0f,
+					-1.0f, 0.0f, 0.0f,
+					-1.0f, 0.0f, 0.0f,
+					-1.0f, 0.0f, 0.0f,
+					-1.0f, 0.0f, 0.0f,
+					-1.0f, 0.0f, 0.0f
+				});
+			uvs.insert(uvs.end(), {
+					0.0f, 1.0f,
+					1.0f, 1.0f,
+					1.0f, 0.0f,
+					0.0f, 1.0f,
+					1.0f, 0.0f,
+					0.0f, 0.0f
+				});
+			layers.insert(layers.end(), {
+					sideTexLocation,
+					sideTexLocation,
+					sideTexLocation,
+					sideTexLocation,
+					sideTexLocation,
+					sideTexLocation
+				});
+		}
+		if (isFaceVisible("top"))
+		{
+			vertices.insert(vertices.end(), {
+					 0.5f + xoffset, 0.5f + yoffset, 0.5f + zoffset,
+					 0.5f + xoffset, 0.5f + yoffset,-0.5f + zoffset,
+					-0.5f + xoffset, 0.5f + yoffset,-0.5f + zoffset,
+					 0.5f + xoffset, 0.5f + yoffset, 0.5f + zoffset,
+					-0.5f + xoffset, 0.5f + yoffset,-0.5f + zoffset,
+					-0.5f + xoffset, 0.5f + yoffset, 0.5f + zoffset
+				});
+			normals.insert(normals.end(), {
+					0.0f, 1.0f, 0.0f,
+					0.0f, 1.0f, 0.0f,
+					0.0f, 1.0f, 0.0f,
+					0.0f, 1.0f, 0.0f,
+					0.0f, 1.0f, 0.0f,
+					0.0f, 1.0f, 0.0f
+				});
+			uvs.insert(uvs.end(), {
+					1.0f, 1.0f,
+					1.0f, 0.0f,
+					0.0f, 0.0f,
+					1.0f, 1.0f,
+					0.0f, 0.0f,
+					0.0f, 1.0f
+				});
+			layers.insert(layers.end(), {
+					topTexLocation,
+					topTexLocation,
+					topTexLocation,
+					topTexLocation,
+					topTexLocation,
+					topTexLocation
+				});
+		}
+		if (isFaceVisible("bottom"))
+		{
+			vertices.insert(vertices.end(), {
+					 0.5f + xoffset,-0.5f + yoffset, 0.5f + zoffset,
+					-0.5f + xoffset,-0.5f + yoffset,-0.5f + zoffset,
+					 0.5f + xoffset,-0.5f + yoffset,-0.5f + zoffset,
+					 0.5f + xoffset,-0.5f + yoffset, 0.5f + zoffset,
+					-0.5f + xoffset,-0.5f + yoffset, 0.5f + zoffset,
+					-0.5f + xoffset,-0.5f + yoffset,-0.5f + zoffset
+				});
+			normals.insert(normals.end(), {
+					0.0f,-1.0f, 0.0f,
+					0.0f,-1.0f, 0.0f,
+					0.0f,-1.0f, 0.0f,
+					0.0f,-1.0f, 0.0f,
+					0.0f,-1.0f, 0.0f,
+					0.0f,-1.0f, 0.0f
+				});
+			uvs.insert(uvs.end(), {
+					1.0f, 1.0f,
+					0.0f, 0.0f,
+					1.0f, 0.0f,
+					1.0f, 1.0f,
+					0.0f, 1.0f,
+					0.0f, 0.0f
+				});
+			layers.insert(layers.end(), {
+					bottomTexLocation,
+					bottomTexLocation,
+					bottomTexLocation,
+					bottomTexLocation,
+					bottomTexLocation,
+					bottomTexLocation
+				});
+		}
+		if (isFaceVisible("front"))
+		{
+			vertices.insert(vertices.end(), {
+					-0.5f + xoffset, 0.5f + yoffset, 0.5f + zoffset,
+					-0.5f + xoffset,-0.5f + yoffset, 0.5f + zoffset,
+					 0.5f + xoffset,-0.5f + yoffset, 0.5f + zoffset,
+					-0.5f + xoffset, 0.5f + yoffset, 0.5f + zoffset,
+					 0.5f + xoffset,-0.5f + yoffset, 0.5f + zoffset,
+					 0.5f + xoffset, 0.5f + yoffset, 0.5f + zoffset
+				});
+			normals.insert(normals.end(), {
+					0.0f, 0.0f, 1.0f,
+					0.0f, 0.0f, 1.0f,
+					0.0f, 0.0f, 1.0f,
+					0.0f, 0.0f, 1.0f,
+					0.0f, 0.0f, 1.0f,
+					0.0f, 0.0f, 1.0f
+				});
+			uvs.insert(uvs.end(), {
+					0.0f, 0.0f,
+					0.0f, 1.0f,
+					1.0f, 1.0f,
+					0.0f, 0.0f,
+					1.0f, 1.0f,
+					1.0f, 0.0f
+				});
+			layers.insert(layers.end(), {
+					sideTexLocation,
+					sideTexLocation,
+					sideTexLocation,
+					sideTexLocation,
+					sideTexLocation,
+					sideTexLocation
+				});
+		}
+		if (isFaceVisible("back"))
+		{
+			vertices.insert(vertices.end(), {
+					 0.5f + xoffset, 0.5f + yoffset,-0.5f + zoffset,
+					-0.5f + xoffset,-0.5f + yoffset,-0.5f + zoffset,
+					-0.5f + xoffset, 0.5f + yoffset,-0.5f + zoffset,
+					 0.5f + xoffset, 0.5f + yoffset,-0.5f + zoffset,
+					 0.5f + xoffset,-0.5f + yoffset,-0.5f + zoffset,
+					-0.5f + xoffset,-0.5f + yoffset,-0.5f + zoffset
+				});
+			normals.insert(normals.end(), {
+					0.0f, 0.0f,-1.0f,
+					0.0f, 0.0f,-1.0f,
+					0.0f, 0.0f,-1.0f,
+					0.0f, 0.0f,-1.0f,
+					0.0f, 0.0f,-1.0f,
+					0.0f, 0.0f,-1.0f
+				});
+			uvs.insert(uvs.end(), {
+					1.0f, 0.0f,
+					0.0f, 1.0f,
+					0.0f, 0.0f,
+					1.0f, 0.0f,
+					1.0f, 1.0f,
+					0.0f, 1.0f
+				});
+			layers.insert(layers.end(), {
+					sideTexLocation,
+					sideTexLocation,
+					sideTexLocation,
+					sideTexLocation,
+					sideTexLocation,
+					sideTexLocation
+				});
+		}
+	}
 };
 
 typedef std::shared_ptr<Block> BlockPtr;

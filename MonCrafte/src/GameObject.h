@@ -1,7 +1,7 @@
 #ifndef GAMEOBJECT_H
 #define GAMEOBJECT_H
 
-#include "cube.h"
+#include "Shader.h"
 
 enum class Type {AIR, SOLID};
 
@@ -38,7 +38,6 @@ public:
 
 	virtual void fillObject(Texture texture, bool transparent);
 	virtual void emptyObject();
-	virtual void render(Shader shader);
 };
 
 typedef std::shared_ptr<GameObject> GameObjectPtr;

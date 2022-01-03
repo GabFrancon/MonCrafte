@@ -28,7 +28,6 @@ private:
 
 	std::vector<ChunkPtr> chunkMap;
 	Selection selection;
-	CubePtr cube;
 
 	// lights
 	std::vector<LightPtr> lights;
@@ -44,7 +43,6 @@ public:
 	World() {};
 	World(std::map<std::string, Texture> textureCollection, GLuint textureArray, GLuint skyTexture);
 
-	CubePtr getCubeGeometry() { return cube; }
 	Texture getTexture(std::string name) { return textures[name]; }
 
 	// coordinates

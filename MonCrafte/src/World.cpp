@@ -1,7 +1,6 @@
 #include "World.h"
 
 World::World(std::map<std::string, Texture> textureCollection, GLuint textureArray, GLuint skyTexture) :
-	cube(std::make_shared<Cube>()),
 	textures(textureCollection),
 	texArray(textureArray),
 	skybox(Skybox(skyTexture))
@@ -17,7 +16,6 @@ World::World(std::map<std::string, Texture> textureCollection, GLuint textureArr
 
 void World::bindToGPU()
 {
-	cube->initBuffers();
 	skybox.initBuffers();
 }
 
@@ -283,8 +281,13 @@ void World::genWorld()
 					int heightMapX = (i + chunkLimit) * chunkSize.x + x;
 					int heightMapY = (j + chunkLimit) * chunkSize.z + z;
 					float height = noise->Get(heightMapX * increment, heightMapY * increment) * 13 + 3;
+
 					/*auto it = textures.begin();
-					std::advance(it, rand() % textures.size());*/
+					do {
+						it = textures.begin();
+						std::advance(it, rand() % textures.size());
+					} while (it->first.back() == '+');*/
+
 
 					for (int y = 0; y < chunkSize.y; y++)
 					{
@@ -292,19 +295,19 @@ void World::genWorld()
 						glm::ivec3 blockPos = toWorldCoord(posInChunk, glm::ivec2(i, j));
 
 						if (blockPos.y < height -1)
-							chunkMap[index]->setBlock(posInChunk, std::make_shared<Block>(Type::SOLID, cube, blockPos, textures["dirt"]));
+							chunkMap[index]->setBlock(posInChunk, std::make_shared<Block>(Type::SOLID, blockPos, textures["dirt"]));
 
 						else if(blockPos.y < height && height < seaLevel)
-							chunkMap[index]->setBlock(posInChunk, std::make_shared<Block>(Type::SOLID, cube, blockPos, textures["gravel"]));
+							chunkMap[index]->setBlock(posInChunk, std::make_shared<Block>(Type::SOLID, blockPos, textures["gravel"]));
 
 						else if (blockPos.y < height && height >= seaLevel)
-							chunkMap[index]->setBlock(posInChunk, std::make_shared<Block>(Type::SOLID, cube, blockPos, textures["dirt"]));
+							chunkMap[index]->setBlock(posInChunk, std::make_shared<Block>(Type::SOLID, blockPos, textures["grass"]));
 
 						else if (blockPos.y <= seaLevel)
-							chunkMap[index]->setBlock(posInChunk, std::make_shared<Block>(Type::SOLID, cube, blockPos, textures["water+"], true));
+							chunkMap[index]->setBlock(posInChunk, std::make_shared<Block>(Type::SOLID, blockPos, textures["water+"], true));
 
 						else
-							chunkMap[index]->setBlock(posInChunk, std::make_shared<Block>(Type::AIR, cube, blockPos, Texture()));
+							chunkMap[index]->setBlock(posInChunk, std::make_shared<Block>(Type::AIR, blockPos, Texture()));
 					}
 				}
 			}
@@ -340,27 +343,25 @@ void World::render(Shader groundShader, Shader skyShader, glm::vec3 camPos, glm:
 	skybox.render(skyShader);
 
 	// render ground
-	std::map<float, ChunkPtr> transparentChunks;
 	for (int i = -chunkLimit; i <= chunkLimit; i++)
 		for (int j = -chunkLimit; j <= chunkLimit; j++)
 		{
 			ChunkPtr chunk = chunkMap[chunkIndex(i, j)];
-			if (chunk->isTransparent())
-			{
-				float distance = glm::length(glm::vec2(std::abs(camPos.x - i), std::abs(camPos.z - j)));
-				transparentChunks[distance] = chunk;
-			}
-			else
-				chunk->render(groundShader, texArray);
+			chunk->render(groundShader, texArray);
 		}
+	// std::map<float, BlockPtr> transparentBlocks;
 	// render transparent chunk last and in decrease order
-	for (std::map<float, ChunkPtr>::reverse_iterator it = transparentChunks.rbegin(); it != transparentChunks.rend(); ++it)
-		it->second->render(groundShader, texArray);
+	//float distance = glm::length(glm::vec2(std::abs(camPos.x - i), std::abs(camPos.z - j)));
+	//transparentBlock[distance] = block;
+	//for (std::map<float, BlockPtr>::reverse_iterator it = transparentBlocks.rbegin(); it != transparentBlocks.rend(); ++it)
+		//it->second->render(groundShader, texArray);
 	
 }
 
 void World::clearBuffers()
 {
+	skybox.clearBuffers();
+
 	for (int i = -chunkLimit ; i <= chunkLimit ; i++)
 		for (int j = -chunkLimit ; j <= chunkLimit ; j++)
 			chunkMap[chunkIndex(i, j)]->clearBuffers();

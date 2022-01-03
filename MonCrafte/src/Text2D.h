@@ -1,9 +1,9 @@
 #ifndef TEXT2D_H
 #define TEXT2D_H
 
-#include "Geometry.h"
+#include "Shader.h"
 
-class Text2D : public Geometry
+class Text2D
 {
 public:
     Text2D() {};
@@ -65,7 +65,7 @@ public:
         }
     };
 
-    void initBuffers() override
+    void initBuffers()
     {
         // generate the VAO
         glGenVertexArrays(1, &vao);
@@ -96,11 +96,24 @@ public:
         shader.use();
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_2D, font);
-        bindBuffers();
+        glBindVertexArray(vao);
         glDrawArrays(GL_TRIANGLES, 0, vertexPositions.size());
     }
 
+    void clearBuffers()
+    {
+        glDeleteVertexArrays(1, &vao);
+        glDeleteBuffers(1, &posVbo);
+        glDeleteBuffers(1, &texVbo);
+    }
+
 private:
+    std::vector<float> vertexPositions;
+    std::vector<float> vertexTextures;
+
+    GLuint vao = 0;
+    GLuint posVbo = 0;
+    GLuint texVbo = 0;
     GLuint font = 0;
 
 };

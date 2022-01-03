@@ -1,11 +1,14 @@
 #ifndef SKYBOX_H
 #define SXYBOX_H
 
-#include "Geometry.h"
-
-class Skybox : Geometry
+class Skybox
 {
 private:
+    std::vector<float> vertexPositions;
+    std::vector<float> vertexTextures;
+
+    GLuint vao = 0;
+    GLuint posVbo = 0;
     GLuint cubemap = 0;
 public:
     Skybox() {}
@@ -56,7 +59,8 @@ public:
              1.0f, -1.0f,  1.0f
         };
     }
-    virtual void initBuffers() override
+
+    void initBuffers()
     {
         // generate the VAO
         glGenVertexArrays(1, &vao);
@@ -77,9 +81,15 @@ public:
         shader.use();
         glActiveTexture(GL_TEXTURE0);
         glBindTexture(GL_TEXTURE_CUBE_MAP, cubemap);
-        bindBuffers();
+        glBindVertexArray(vao);
         glDrawArrays(GL_TRIANGLES, 0, 36);
         glDepthMask(GL_TRUE);
+    }
+
+    void clearBuffers()
+    {
+        glDeleteVertexArrays(1, &vao);
+        glDeleteBuffers(1, &posVbo);
     }
 };
 

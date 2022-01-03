@@ -1,13 +1,12 @@
 #include "Camera.h"
 
-Camera::Camera(World world, glm::vec3 position, glm::vec3 front, glm::vec3 up, GLuint pointerTexture) :
+Camera::Camera(glm::vec3 position, glm::vec3 front, glm::vec3 up, GLuint pointerTexture) :
     camPos(position), camFront(front), camUp(up), worldUp(up), availableBlocks(std::vector<std::string>(10, "None")), pointer(Text2D("@", 1, 388, 288, 35, pointerTexture))
 {
     updateCameraVectors();
 
     blockInHand = std::make_shared<Block>(
         Type::SOLID,
-        world.getCubeGeometry(), 
         glm::vec3(0.f),
         Texture());
 
@@ -15,7 +14,7 @@ Camera::Camera(World world, glm::vec3 position, glm::vec3 front, glm::vec3 up, G
     pointer.initBuffers();
 }
 
-void Camera::clearBuffers() { pointer.freeBuffers(); }
+void Camera::clearBuffers() { pointer.clearBuffers(); }
 
 void Camera::setAspectRatio(GLFWwindow* window)
 {
@@ -139,16 +138,13 @@ void Camera::bindProjection(Shader worldShader, Shader playerShader, Shader skyS
 
 void Camera::render(Shader playerShader, Shader pointerShader, World world)
 {   
-    playerShader.use();
-    try {
-        if (availableBlocks[currentBlock] != "None")
-        {
-            blockInHand->setPosition(camFront / 4 - camRight / 7 - camUp / 9);
-            blockInHand->setTexture(world.getTexture(availableBlocks[currentBlock]));
-            blockInHand->render(playerShader);
-        }
-    }
-    catch (...) { std::cout << "failed to render player" << std::endl; }
+    /*playerShader.use();
+    if (availableBlocks[currentBlock] != "None")
+    {
+        blockInHand->setPosition(camFront / 4 - camRight / 7 - camUp / 9);
+        blockInHand->setTexture(world.getTexture(availableBlocks[currentBlock]));
+        blockInHand->quickRender();
+    }*/
 
     pointer.render(pointerShader);
 }

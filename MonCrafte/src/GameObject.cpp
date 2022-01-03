@@ -22,11 +22,3 @@ void GameObject::emptyObject()
 {
     type = Type::AIR;
 }
-
-void GameObject::render(Shader shader)
-{
-    // send uniform values to shaders
-    shader.setMat4("transMat", transMat);
-    shader.setBool("pointed", pointed);
-    shader.setVec3("lightCoeff", lightCoeff);
-}
