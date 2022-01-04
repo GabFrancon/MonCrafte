@@ -17,9 +17,9 @@ class World
 {
 private:
 	// chunks
-	int worldSize = 15;								// in terms of number of chunks
-	int renderRadius = 4;							// in terms of number of chunks
-	glm::ivec3 chunkSize = glm::ivec3(15, 25, 15);  // in terms of number of blocks
+	int worldSize = 15;								 // in terms of number of chunks
+	int renderRadius = 4;							 // in terms of number of chunks
+	glm::ivec3 chunkSize = glm::ivec3(15, 255, 15);  // in terms of number of blocks
 
 	int xLimit     = 0;
 	int yLimit     = 0;
@@ -48,6 +48,7 @@ public:
 	// coordinates
 	glm::ivec3 toChunkCoord(glm::ivec3 pos, glm::ivec2 chunkPos);
 	glm::vec3  toWorldCoord(glm::ivec3 pos, glm::ivec2 chunkPos);
+	glm::ivec2 getRelatedChunk(glm::vec3 blockPos);
 	bool       isInWorld(glm::vec3 objectPos);
 	int        chunkIndex(int i, int j);
 
@@ -55,6 +56,7 @@ public:
 	void     addBlock(std::string texName);
 	BlockPtr getBlock(glm::vec3 blockPos);
 	void     destroyBlock();
+	void     markChunkForRegen(BlockPtr block);
 	void     hideNeighboursFace(BlockPtr block);
 	void     showNeighboursFace(BlockPtr block);
 	std::map<std::string, BlockPtr> getNeighbours(BlockPtr block);
@@ -67,10 +69,11 @@ public:
 	bool  collide(glm::vec3 cam);
 	float faceDistance(glm::vec3 camPos, glm::vec3 lookAt, glm::vec3 point, glm::vec3 normal);
 	void  updateSelection(glm::vec3 camPos, glm::vec3 lookAt);
+	bool isSelection() { return selection.isSelection; }
+	glm::vec3 getSelection() { return selection.object->getPosition(); }
 
 	// generation and rendering
 	void genWorld();
-	void bindToGPU();
 	void bindLights(Shader groundShader, Shader playerShader);
 	void render(Shader groundShader, Shader skyShader, glm::vec3 camPos, glm::vec3 lookAt);
 	void clearBuffers();

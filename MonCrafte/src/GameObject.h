@@ -3,41 +3,34 @@
 
 #include "Shader.h"
 
-enum class Type {AIR, SOLID};
-
 class GameObject
 {
 protected:
-	Type type;
-	glm::vec3 lightCoeff;
 	glm::vec3 position;
 	glm::vec3 size;
 	glm::mat4 transMat;
-
 	Texture texture;
+	Type type;
 
 	bool pointed = false;
-	bool transparent = false;
 
 public:
-	GameObject(Type _type, glm::vec3 _position, Texture _texture, bool _transparent, float _size=1.0f, glm::vec3 _lightCoeff=glm::vec3(0.3, 1.0, 0.5));
+	GameObject(glm::vec3 _position, Texture _texture, float _size=1.0f);
 
 	glm::vec3 getPosition() const { return position; }
 	Texture getTexture() const { return texture; }
 
 	bool isPointed() const { return pointed; }
-	bool isTransparent() const { return transparent; }
+	bool isSolid() { return type == Type::SOLID; }
+	bool isTransparent() { return type == Type::TRANSPARENT; }
 	bool isEmpty() { return type == Type::AIR; }
 
 	void setPosition(glm::vec3 position) { this->position = position;  updateTransMat(); }
 	void setSize(float size) { this->size = glm::vec3(size);  updateTransMat(); }
-	void setTexture(Texture texture) { this->texture = texture; }
 	void setPointed(bool pointed) { this->pointed = pointed; }
-	void setTransparent(bool transparent) { this->transparent = transparent; }
+	virtual void fillObject(Texture texture);
+	virtual void emptyObject() { this->type = Type::AIR; }
 	void updateTransMat();
-
-	virtual void fillObject(Texture texture, bool transparent);
-	virtual void emptyObject();
 };
 
 typedef std::shared_ptr<GameObject> GameObjectPtr;

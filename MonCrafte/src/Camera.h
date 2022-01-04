@@ -52,8 +52,16 @@ private:
     std::vector<std::string> availableBlocks;
     glm::mat4 projMat;
 
-    BlockPtr blockInHand;
     Text2D pointer;
+
+    GLuint vao = 0;
+    GLuint posVbo = 0;
+    GLuint normVbo = 0;
+    GLuint texVbo = 0;
+
+    std::vector<float> vertices;
+    std::vector<float> normals;
+    std::vector<float> uvs;
 };
 
 #endif // !CAMERA_H

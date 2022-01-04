@@ -11,14 +11,19 @@ public:
 	void setBlock(glm::ivec3 blockCoords, BlockPtr block);
 	BlockPtr getBlock(glm::ivec3 blockCoords);
 	int blockIndex(int x, int y, int z);
+	bool mustBeRegen() { return regenRequired; }
+	bool containsTransparentBlocks() { return hasTransparency; }
 
 	void generateChunk();
+	void markForRegen() { regenRequired = true; }
 	void render(Shader shader, GLuint texArray);
 	void clearBuffers();
 
 private:
 	glm::ivec3 chunkSize; // in terms of number of blocks
 	std::vector<BlockPtr> blockMap;
+	bool hasTransparency = false;
+	bool regenRequired = false;
 
 	GLuint vao      = 0;
 	GLuint posVbo   = 0;

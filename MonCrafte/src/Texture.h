@@ -18,14 +18,19 @@
 #include <glm/glm.hpp>
 #include <glm/ext.hpp>
 
+enum class Type { AIR, SOLID, TRANSPARENT };
+
 class Texture
 {
 private:
+	Type type = Type::AIR;
 	std::vector<int> positionsInArray;
 	std::vector<GLuint> texID;
 
 public:
 	Texture() : texID(std::vector<GLuint>(0, 0)), positionsInArray(std::vector<int>(0, -1)) {}
+	
+	void setType(Type type) { this->type = type; }
 
 	void addSample(GLuint texture, int posInArray)
 	{
@@ -42,9 +47,16 @@ public:
 
 	int getLocationInArray(int index)
 	{
-		if(index<positionsInArray.size())
-			return positionsInArray[index];
-		return positionsInArray[0];
+		int size = positionsInArray.size();
+		if (size == 0)
+			return 0;
+
+		else if (size == 1)
+			return positionsInArray[0];
+
+		return positionsInArray[index];
 	}
+
+	Type getType() { return type; }
 };
 #endif // !TEXTURE_H

@@ -264,7 +264,7 @@ void initOpenGL()
 
 void loadTextures()
 {
-    Texture sandTex, dirtTex, grassTex, gravelTex, brickTex, woodplanckTex, stoneTex, woodTex, waterTex, leavesTex, fontTex;
+    Texture sandTex, dirtTex, grassTex, gravelTex, brickTex, woodplanckTex, stoneTex, woodTex, waterTex, leavesTex, fontTex, selTex;
 
     GLuint sand(loadTexture("texture/512x512/sand.bmp"));
     sandTex.addSample(sand, currentSpotInArrayTex++);
@@ -307,17 +307,34 @@ void loadTextures()
     GLuint font(loadTexture("texture/512x512/font.bmp"));
     fontTex.addSample(font, currentSpotInArrayTex++);
 
-    textures["sand"] = sandTex;
-    textures["dirt"] = dirtTex;
-    textures["grass"] = grassTex;
-    textures["gravel"] = gravelTex;
-    textures["brick"] = brickTex;
+    GLuint selection(loadTexture("texture/512x512/selection.png"));
+    selTex.addSample(selection, currentSpotInArrayTex++);
+
+    sandTex.setType(Type::SOLID);
+    dirtTex.setType(Type::SOLID);
+    grassTex.setType(Type::SOLID);
+    gravelTex.setType(Type::SOLID);
+    brickTex.setType(Type::SOLID);
+    woodplanckTex.setType(Type::SOLID);
+    stoneTex.setType(Type::SOLID);
+    woodTex.setType(Type::SOLID);
+    waterTex.setType(Type::TRANSPARENT);
+    leavesTex.setType(Type::TRANSPARENT);
+    fontTex.setType(Type::TRANSPARENT);
+    selTex.setType(Type::TRANSPARENT);
+
+    textures["sand"]       = sandTex;
+    textures["dirt"]       = dirtTex;
+    textures["grass"]      = grassTex;
+    textures["gravel"]     = gravelTex;
+    textures["brick"]      = brickTex;
     textures["woodplanck"] = woodplanckTex;
-    textures["stone"] = stoneTex;
-    textures["wood"] = woodTex;
-    textures["water+"] = waterTex;
-    textures["leaves+"] = leavesTex;
-    textures["font+"] = fontTex;
+    textures["stone"]      = stoneTex;
+    textures["wood"]       = woodTex;
+    textures["water"]      = waterTex;
+    textures["leaves"]     = leavesTex;
+    textures["font"]       = fontTex;
+    textures["selection"]  = selTex;
 }
 
 void setupShaders()
@@ -404,7 +421,7 @@ int main()
         glm::vec3(0.0, 10.0, 0.0),  // position
         glm::vec3(0.0, 0.0, -1.0), // front vector
         glm::vec3(0.0, 1.0, 0.0),  // up vector
-        textures["font+"].getTexID(0));
+        textures["font"].getTexID(0));
 
     camera.setAspectRatio(window);
     camera.insertBlock("sand", 0);
@@ -412,8 +429,8 @@ int main()
     camera.insertBlock("gravel", 2);
     camera.insertBlock("woodplanck", 3);
     camera.insertBlock("brick", 4);
-    camera.insertBlock("water+", 5);
-    camera.insertBlock("leaves+", 6);
+    camera.insertBlock("water", 5);
+    camera.insertBlock("leaves", 6);
     camera.insertBlock("stone", 7);
 
     // finally send all the data to the shaders

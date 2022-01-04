@@ -53,10 +53,24 @@ int Chunk::blockIndex(int x, int y, int z)
 void Chunk::generateChunk()
 {
 	vertices.clear();
+	normals.clear();
+	uvs.clear();
+	layers.clear();
+	hasTransparency = false;
 
+	// first add solid blocks
 	for (BlockPtr block : blockMap)
 	{
-		if (!block->isEmpty() && !block->isHidden() && !block->isTransparent())
+		if (block->isTransparent())
+			hasTransparency = true;
+
+		if (block->isSolid() && !block->isHidden())
+			block->addGeometry(vertices, normals, uvs, layers);
+	}
+	// then transparent ones
+	for (BlockPtr block : blockMap)
+	{
+		if (block->isTransparent() && !block->isHidden())
 			block->addGeometry(vertices, normals, uvs, layers);
 	}
 
@@ -83,6 +97,7 @@ void Chunk::generateChunk()
 	glBufferData(GL_ARRAY_BUFFER, layerBufferSize, layers.data(), GL_DYNAMIC_READ);
 
 	glBindVertexArray(0);
+	regenRequired = false;
 }
 
 void Chunk::render(Shader shader, GLuint texArray)

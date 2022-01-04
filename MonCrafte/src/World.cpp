@@ -11,11 +11,6 @@ World::World(std::map<std::string, Texture> textureCollection, GLuint textureArr
 	chunkLimit = std::floor(worldSize / 2);
 
 	chunkMap = std::vector<ChunkPtr>(worldSize * worldSize, nullptr);
-	bindToGPU();
-}
-
-void World::bindToGPU()
-{
 	skybox.initBuffers();
 }
 
@@ -40,6 +35,14 @@ glm::vec3 World::toWorldCoord(glm::ivec3 pos, glm::ivec2 chunkPos)
 	return glm::vec3(x, y, z);
 }
 
+glm::ivec2 World::getRelatedChunk(glm::vec3 blockPos)
+{
+	int chunkX = std::floor((blockPos.x + (float)chunkSize.x / 2) / chunkSize.x);
+	int chunkZ = std::floor((blockPos.z + (float)chunkSize.z / 2) / chunkSize.z);
+	return glm::ivec2(chunkX, chunkZ);
+}
+
+
 bool World::isInWorld(glm::vec3 objectPos)
 {
 	if (-xLimit <= objectPos.x && objectPos.x <= xLimit)
@@ -51,9 +54,8 @@ bool World::isInWorld(glm::vec3 objectPos)
 
 BlockPtr World::getBlock(glm::vec3 blockPos)
 {
-	int chunkX = std::floor((blockPos.x + (float)chunkSize.x / 2) / chunkSize.x);
-	int chunkZ = std::floor((blockPos.z + (float)chunkSize.z / 2) / chunkSize.z);
-	return chunkMap[chunkIndex(chunkX, chunkZ)]->getBlock(toChunkCoord(blockPos, glm::ivec2(chunkX, chunkZ)));
+	glm::ivec2 chunkPos = getRelatedChunk(blockPos);
+	return chunkMap[chunkIndex(chunkPos.x, chunkPos.y)]->getBlock(toChunkCoord(blockPos, glm::ivec2(chunkPos.x, chunkPos.y)));
 }
 
 
@@ -75,7 +77,7 @@ void World::addBlock(std::string texName)
 		if (isInWorld(position))
 		{
 			BlockPtr newBlock = getBlock(position);
-			newBlock->fillObject(textures[texName], texName.back() == '+');
+			newBlock->fillObject(textures[texName]);
 			hideNeighboursFace(newBlock);
 		}
 	}
@@ -90,6 +92,13 @@ void World::destroyBlock()
 	}
 }
 
+void World::markChunkForRegen(BlockPtr block)
+{
+	glm::ivec2 chunkPos = getRelatedChunk(block->getPosition());
+	chunkMap[chunkIndex(chunkPos.x, chunkPos.y)]->markForRegen();
+}
+
+
 void World::addLight(glm::vec3 position, glm::vec3 color)
 {
 	lights.push_back(std::make_shared<Light>(position, color));
@@ -102,6 +111,9 @@ void World::destroyLight(unsigned int index)
 
 bool World::collide(glm::vec3 cam)
 {
+	if(!isInWorld(cam))
+		return false;
+
 	int minX = std::max((int)std::trunc(cam.x - 1), -xLimit);
 	int maxX = std::min((int)std::trunc(cam.x + 1),  xLimit);
 	int minZ = std::max((int)std::trunc(cam.z - 1), -zLimit);
@@ -117,7 +129,7 @@ bool World::collide(glm::vec3 cam)
 						if ((cam.y - 0.4 < y + 0.4) && (cam.y + 0.4 > y - 0.4))
 						{
 							BlockPtr object = getBlock(glm::vec3(x,y,z));
-							if (!(object->isEmpty() || object->isTransparent() || object->isHidden()))
+							if (object->isSolid())
 								return true;
 						}
 	return false;
@@ -202,7 +214,7 @@ void World::updateSelection(glm::vec3 camPos, glm::vec3 lookAt)
 				}
 			}
 
-	if(selection.isSelection)
+	if (selection.isSelection)
 		selection.object->setPointed(true);
 }
 
@@ -235,7 +247,13 @@ void World::hideNeighboursFace(BlockPtr block)
 
 		for (auto& it : neighbours)
 		{
-			it.second->setFaceRendering(it.first, block->isTransparent() && !it.second->isTransparent() && !it.second->isEmpty());
+			bool previous = it.second->isFaceVisible(it.first);
+			bool next = block->isTransparent() && !it.second->isTransparent() && !it.second->isEmpty();
+			if (next != previous)
+			{
+				it.second->setFaceRendering(it.first, next);
+				markChunkForRegen(it.second);
+			}
 			block->setFaceRendering(block->getReversedFace(it.first), (!block->isTransparent() && it.second->isTransparent()) || it.second->isEmpty());
 		}
 	}
@@ -250,6 +268,8 @@ void World::hideNeighboursFace(BlockPtr block)
 		block->setFaceRendering("back", false);
 	if (pos.z == zLimit)
 		block->setFaceRendering("front", false);
+
+	markChunkForRegen(block);
 }
 
 void World::showNeighboursFace(BlockPtr block)
@@ -259,7 +279,15 @@ void World::showNeighboursFace(BlockPtr block)
 		std::map<std::string, BlockPtr> neighbours = getNeighbours(block);
 
 		for (auto& it : neighbours)
-			it.second->setFaceRendering(it.first, !it.second->isEmpty());
+		{
+			bool previous = it.second->isFaceVisible(it.first);
+			bool next = !it.second->isEmpty();
+			if (next != previous)
+			{
+				it.second->setFaceRendering(it.first, next);
+				markChunkForRegen(it.second);
+			}
+		}
 	}
 }
 
@@ -274,6 +302,11 @@ void World::genWorld()
 		{
 			int index = chunkIndex(i, j);
 			chunkMap[index] = std::make_shared<Chunk>(chunkSize);
+			auto it = textures.begin();
+			/*do {
+				it = textures.begin();
+				std::advance(it, rand() % textures.size());
+			} while (it->second.getType() == Type::TRANSPARENT);*/
 
 			for (int x = 0; x < chunkSize.x; x++) {
 				for (int z = 0; z < chunkSize.z; z++) {
@@ -282,32 +315,28 @@ void World::genWorld()
 					int heightMapY = (j + chunkLimit) * chunkSize.z + z;
 					float height = noise->Get(heightMapX * increment, heightMapY * increment) * 13 + 3;
 
-					/*auto it = textures.begin();
-					do {
-						it = textures.begin();
-						std::advance(it, rand() % textures.size());
-					} while (it->first.back() == '+');*/
-
-
 					for (int y = 0; y < chunkSize.y; y++)
 					{
 						glm::ivec3 posInChunk = glm::ivec3(x, y, z);
 						glm::ivec3 blockPos = toWorldCoord(posInChunk, glm::ivec2(i, j));
 
-						if (blockPos.y < height -1)
-							chunkMap[index]->setBlock(posInChunk, std::make_shared<Block>(Type::SOLID, blockPos, textures["dirt"]));
+						if (blockPos.y < height - 4)
+							chunkMap[index]->setBlock(posInChunk, std::make_shared<Block>(blockPos, textures["stone"]));
+
+						else if (blockPos.y < height - 1)
+							chunkMap[index]->setBlock(posInChunk, std::make_shared<Block>(blockPos, textures["dirt"]));
 
 						else if(blockPos.y < height && height < seaLevel)
-							chunkMap[index]->setBlock(posInChunk, std::make_shared<Block>(Type::SOLID, blockPos, textures["gravel"]));
+							chunkMap[index]->setBlock(posInChunk, std::make_shared<Block>(blockPos, textures["gravel"]));
 
 						else if (blockPos.y < height && height >= seaLevel)
-							chunkMap[index]->setBlock(posInChunk, std::make_shared<Block>(Type::SOLID, blockPos, textures["grass"]));
+							chunkMap[index]->setBlock(posInChunk, std::make_shared<Block>(blockPos, textures["grass"]));
 
 						else if (blockPos.y <= seaLevel)
-							chunkMap[index]->setBlock(posInChunk, std::make_shared<Block>(Type::SOLID, blockPos, textures["water+"], true));
+							chunkMap[index]->setBlock(posInChunk, std::make_shared<Block>(blockPos, textures["water"]));
 
 						else
-							chunkMap[index]->setBlock(posInChunk, std::make_shared<Block>(Type::AIR, blockPos, Texture()));
+							chunkMap[index]->setBlock(posInChunk, std::make_shared<Block>(blockPos, Texture()));
 					}
 				}
 			}
@@ -322,7 +351,8 @@ void World::genWorld()
 				for (int y = 0; y < chunkSize.y; y++)
 					for (int z = 0; z < chunkSize.z; z++)
 						hideNeighboursFace(chunkMap[index]->getBlock(glm::ivec3(x, y, z)));
-			chunkMap[index]->generateChunk();
+
+			chunkMap[index]->markForRegen();
 		}
 
 	addLight(
@@ -343,19 +373,30 @@ void World::render(Shader groundShader, Shader skyShader, glm::vec3 camPos, glm:
 	skybox.render(skyShader);
 
 	// render ground
+	std::map<float, ChunkPtr> chunkWithTransparency;
+
 	for (int i = -chunkLimit; i <= chunkLimit; i++)
 		for (int j = -chunkLimit; j <= chunkLimit; j++)
 		{
 			ChunkPtr chunk = chunkMap[chunkIndex(i, j)];
-			chunk->render(groundShader, texArray);
+
+			if (chunk->mustBeRegen())
+				chunk->generateChunk();
+
+			// put chunk containing transparent blocks aside
+			if (chunk->containsTransparentBlocks())
+			{
+				float distance = glm::length(glm::vec2(camPos.x, camPos.z) - glm::vec2(i * chunkSize.x, j * chunkSize.z));
+				chunkWithTransparency[distance] = chunk;
+			}
+			// rendering solid chunk
+			else
+				chunk->render(groundShader, texArray);
 		}
-	// std::map<float, BlockPtr> transparentBlocks;
-	// render transparent chunk last and in decrease order
-	//float distance = glm::length(glm::vec2(std::abs(camPos.x - i), std::abs(camPos.z - j)));
-	//transparentBlock[distance] = block;
-	//for (std::map<float, BlockPtr>::reverse_iterator it = transparentBlocks.rbegin(); it != transparentBlocks.rend(); ++it)
-		//it->second->render(groundShader, texArray);
-	
+
+	// render transparency last and from farest to nearest vertex from the camera
+	for (std::map<float, ChunkPtr>::reverse_iterator it = chunkWithTransparency.rbegin(); it != chunkWithTransparency.rend(); ++it)
+		it->second->render(groundShader, texArray);
 }
 
 void World::clearBuffers()

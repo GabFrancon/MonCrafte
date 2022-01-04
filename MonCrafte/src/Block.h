@@ -9,8 +9,8 @@ private:
 	std::map<std::string, bool> faceRendering;
 
 public:
-	Block(Type _type, glm::vec3 _position, Texture _texture, bool _transparent = 0)
-		: GameObject(_type, _position, _texture, _transparent),
+	Block(glm::vec3 _position, Texture _texture)
+		: GameObject(_position, _texture),
 		faceRendering{ {"right", !isEmpty()}, {"left",!isEmpty()}, {"top", !isEmpty()}, {"bottom", !isEmpty()}, {"front", !isEmpty()}, {"back", !isEmpty()} } {}
 
 	bool isFaceVisible(std::string name) { return faceRendering[name]; }
@@ -26,11 +26,11 @@ public:
 		if (name == "back")  return "front";
 	}
 
-	void fillObject(Texture texture, bool transparency) override
+	void fillObject(Texture texture) override
 	{
 		for (auto& it : faceRendering)
 			it.second = true;
-		GameObject::fillObject(texture, transparency);
+		GameObject::fillObject(texture);
 	}
 
 	void emptyObject() override

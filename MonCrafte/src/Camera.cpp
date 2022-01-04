@@ -1,17 +1,54 @@
 #include "Camera.h"
 
 Camera::Camera(glm::vec3 position, glm::vec3 front, glm::vec3 up, GLuint pointerTexture) :
-    camPos(position), camFront(front), camUp(up), worldUp(up), availableBlocks(std::vector<std::string>(10, "None")), pointer(Text2D("@", 1, 388, 288, 35, pointerTexture))
+    camPos(position), camFront(front), camUp(up), worldUp(up), 
+    availableBlocks(std::vector<std::string>(10, "None")), 
+    pointer(Text2D("@", 1, 388, 288, 35, pointerTexture))
 {
     updateCameraVectors();
-
-    blockInHand = std::make_shared<Block>(
-        Type::SOLID,
-        glm::vec3(0.f),
-        Texture());
-
-    blockInHand->setSize(0.1);
     pointer.initBuffers();
+
+
+    Texture tex;
+    tex.addSample(0, 0);
+    tex.setType(Type::SOLID);
+
+    BlockPtr block = std::make_shared<Block>(
+        glm::vec3(0.f),
+        tex);
+
+    std::vector<float> layers;
+    block->addGeometry(vertices, normals, uvs, layers);
+
+    // generate the VAO
+    glGenVertexArrays(1, &vao);
+    glBindVertexArray(vao);
+
+    // position coordinates
+    glGenBuffers(1, &posVbo);
+    size_t vertexBufferSize = sizeof(float) * vertices.size();
+    glBindBuffer(GL_ARRAY_BUFFER, posVbo);
+    glBufferData(GL_ARRAY_BUFFER, vertexBufferSize, vertices.data(), GL_DYNAMIC_READ);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+
+    // normal coordinates
+    glGenBuffers(1, &normVbo);
+    size_t normalBufferSize = sizeof(float) * normals.size();
+    glBindBuffer(GL_ARRAY_BUFFER, normVbo);
+    glBufferData(GL_ARRAY_BUFFER, normalBufferSize, normals.data(), GL_DYNAMIC_READ);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(1);
+
+    // texture coordinates
+    glGenBuffers(1, &texVbo);
+    size_t textureBufferSize = sizeof(float) * uvs.size();
+    glBindBuffer(GL_ARRAY_BUFFER, texVbo);
+    glBufferData(GL_ARRAY_BUFFER, textureBufferSize, uvs.data(), GL_DYNAMIC_READ); 
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), 0);
+    glEnableVertexAttribArray(2);
+
+    glBindVertexArray(0);
 }
 
 void Camera::clearBuffers() { pointer.clearBuffers(); }
@@ -119,6 +156,7 @@ void Camera::bindView(Shader worldShader, Shader playerShader, Shader skyShader)
     playerShader.use();
     playerShader.setVec3("camPos", camPos);
     playerShader.setMat4("viewMat", troncatedView);
+    playerShader.setMat4("transMat", glm::scale(glm::translate(glm::mat4(1.f), camFront / 4 - camRight / 7 - camUp / 9), glm::vec3(0.1f)));
 
     skyShader.use();
     skyShader.setMat4("viewMat", troncatedView);
@@ -138,13 +176,21 @@ void Camera::bindProjection(Shader worldShader, Shader playerShader, Shader skyS
 
 void Camera::render(Shader playerShader, Shader pointerShader, World world)
 {   
-    /*playerShader.use();
     if (availableBlocks[currentBlock] != "None")
     {
-        blockInHand->setPosition(camFront / 4 - camRight / 7 - camUp / 9);
-        blockInHand->setTexture(world.getTexture(availableBlocks[currentBlock]));
-        blockInHand->quickRender();
-    }*/
+        playerShader.use();
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, world.getTexture(availableBlocks[currentBlock]).getTexID(0));
+        glBindVertexArray(vao);
+        glDrawArrays(GL_TRIANGLES, 0, vertices.size());
+        if (world.isSelection())
+        {
+            playerShader.setMat4("viewMat", computeViewMatrix());
+            playerShader.setMat4("transMat", glm::scale(glm::translate(glm::mat4(1.f), world.getSelection()), glm::vec3(1.1f)));
+            glBindTexture(GL_TEXTURE_2D, world.getTexture("selection").getTexID(0));
+            glDrawArrays(GL_TRIANGLES, 0, vertices.size());
+        }
+    }
 
     pointer.render(pointerShader);
 }
