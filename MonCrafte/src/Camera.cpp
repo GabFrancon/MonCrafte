@@ -8,7 +8,6 @@ Camera::Camera(glm::vec3 position, glm::vec3 front, glm::vec3 up, GLuint pointer
     updateCameraVectors();
     pointer.initBuffers();
 
-
     Texture tex;
     tex.addSample(0, 0);
     tex.setType(Type::SOLID);
@@ -51,7 +50,15 @@ Camera::Camera(glm::vec3 position, glm::vec3 front, glm::vec3 up, GLuint pointer
     glBindVertexArray(0);
 }
 
-void Camera::clearBuffers() { pointer.clearBuffers(); }
+void Camera::clearBuffers()
+{
+    pointer.clearBuffers();
+
+    glDeleteVertexArrays(1, &vao);
+    glDeleteBuffers(1, &posVbo);
+    glDeleteBuffers(1, &normVbo);
+    glDeleteBuffers(1, &texVbo);
+}
 
 void Camera::setAspectRatio(GLFWwindow* window)
 {
@@ -186,7 +193,7 @@ void Camera::render(Shader playerShader, Shader pointerShader, World world)
         if (world.isSelection())
         {
             playerShader.setMat4("viewMat", computeViewMatrix());
-            playerShader.setMat4("transMat", glm::scale(glm::translate(glm::mat4(1.f), world.getSelection()), glm::vec3(1.1f)));
+            playerShader.setMat4("transMat", glm::scale(glm::translate(glm::mat4(1.f), world.getSelection()), glm::vec3(1.01f)));
             glBindTexture(GL_TEXTURE_2D, world.getTexture("selection").getTexID(0));
             glDrawArrays(GL_TRIANGLES, 0, vertices.size());
         }

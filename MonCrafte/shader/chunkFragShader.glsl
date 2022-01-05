@@ -30,5 +30,5 @@ void main()
 
 	vec4 light = vec4( (ambient + diffuse + specular) * lightColor, 1.0);
 	vec4 texture = texture(material.textureArray, vec3(fTex, layer));
-	FragColor = light * texture;
+	FragColor = texture;
 } 

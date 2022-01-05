@@ -10,16 +10,16 @@ struct Selection {
 	BlockPtr object;
 	bool     isSelection = false;
 	int      faceID      = 0;
-	float    distance    = 10.0;
+	float    distance    = 6.0;
 };
 
 class World
 {
 private:
 	// chunks
-	int worldSize = 15;								 // in terms of number of chunks
+	int worldSize = 11;								 // in terms of number of chunks
 	int renderRadius = 4;							 // in terms of number of chunks
-	glm::ivec3 chunkSize = glm::ivec3(15, 255, 15);  // in terms of number of blocks
+	glm::ivec3 chunkSize = glm::ivec3(15, 60, 15);  // in terms of number of blocks
 
 	int xLimit     = 0;
 	int yLimit     = 0;

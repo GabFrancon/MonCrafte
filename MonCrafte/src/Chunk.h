@@ -17,6 +17,7 @@ public:
 	void generateChunk();
 	void markForRegen() { regenRequired = true; }
 	void render(Shader shader, GLuint texArray);
+	void deleteVAO() { glDeleteVertexArrays(1, &vao); }
 	void clearBuffers();
 
 private:
