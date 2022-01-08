@@ -1,10 +1,9 @@
 #version 330 core
 
-out vec4 FragColor;
+uniform samplerCube skybox;
 
 in vec3 aTex;
-
-uniform samplerCube skybox;
+out vec4 FragColor;
 
 void main()
 {    

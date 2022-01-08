@@ -18,16 +18,13 @@ out vec4 FragColor;
 
 void main()
 {
-	vec3 norm = normalize(fNor);
 	vec3 lightDir = normalize(lightPos - fPos);
-	vec3 viewDir = normalize(camPos - fPos);
-	vec3 reflectDir = reflect(-lightDir, norm);
 
 	float ambient  = 0.3;
-	float diffuse  = max(dot(norm, lightDir), 0.0);
+	float diffuse  = max(dot(fNor, lightDir), 0.0);
 
-	vec4 resultLight = vec4( (ambient + diffuse) * lightColor, 1.0);
-	vec4 resultTexture = texture(material.textureData, fTex);
+	vec4 light = vec4( (ambient + diffuse) * lightColor, 1.0);
+	vec4 texture = texture(material.textureData, fTex);
 
-	FragColor = resultLight * resultTexture;
+	FragColor = light * texture;
 } 

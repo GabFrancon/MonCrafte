@@ -3,8 +3,6 @@
 Chunk::Chunk(glm::ivec3 size) : chunkSize(size)
 {
 	blockMap = std::vector<BlockPtr>(size.x * size.y * size.z, nullptr);
-
-	// generate the VAO
 	glGenVertexArrays(1, &vao);
 }
 
@@ -25,38 +23,45 @@ int Chunk::blockIndex(int x, int y, int z)
 
 void Chunk::generateChunk()
 {
-	// first clear CPU data and GPU buffers
-	vertices.clear();
+	// first clear CPU data
+	positions.clear();
 	normals.clear();
-	uvs.clear();
-	layers.clear();
-	clearBuffers();
+	texCoords.clear();
+	texIndices.clear();
 	hasTransparency = false;
+	std::vector<BlockPtr> transparentBlocks;
 
 	// then add solid blocks (CPU)
 	for (BlockPtr block : blockMap)
 	{
-		if (block->isTransparent())
+		if (block->isTransparent() && !block->isHidden())
+		{
 			hasTransparency = true;
+			transparentBlocks.push_back(block);
+		}
 
 		else if (block->isSolid() && !block->isHidden())
-			block->addGeometry(vertices, normals, uvs, layers);
+			block->addGeometry(positions, normals, texCoords, texIndices);
 	}
 	// then transparent ones (CPU)
-	for (BlockPtr block : blockMap)
-	{
-		if (block->isTransparent() && !block->isHidden())
-			block->addGeometry(vertices, normals, uvs, layers);
-	}
+	for (BlockPtr block : transparentBlocks)
+			block->addGeometry(positions, normals, texCoords, texIndices);
 
-	// finally regen GPU buffers
+	// finally clear buffers before bind GPU buffers again
+	clearVBOs();
+	bindVBOs();
+	regenRequired = false;
+}
+
+void Chunk::bindVBOs()
+{
 	glBindVertexArray(vao);
 
 	// position coordinates
-	size_t vertexBufferSize = sizeof(float) * vertices.size();
+	size_t vertexBufferSize = sizeof(float) * positions.size();
 	glGenBuffers(1, &posVbo);
 	glBindBuffer(GL_ARRAY_BUFFER, posVbo);
-	glBufferData(GL_ARRAY_BUFFER, vertexBufferSize, vertices.data(), GL_DYNAMIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, vertexBufferSize, positions.data(), GL_DYNAMIC_DRAW);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
 
@@ -69,38 +74,35 @@ void Chunk::generateChunk()
 	glEnableVertexAttribArray(1);
 
 	// texture coordinates
-	size_t textureBufferSize = sizeof(float) * uvs.size();
+	size_t textureBufferSize = sizeof(float) * texCoords.size();
 	glGenBuffers(1, &texVbo);
 	glBindBuffer(GL_ARRAY_BUFFER, texVbo);
-	glBufferData(GL_ARRAY_BUFFER, textureBufferSize, uvs.data(), GL_DYNAMIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, textureBufferSize, texCoords.data(), GL_DYNAMIC_DRAW);
 	glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), 0);
 	glEnableVertexAttribArray(2);
 
-	// layer
-	size_t layerBufferSize = sizeof(float) * layers.size();
-	glGenBuffers(1, &layerVbo);
-	glBindBuffer(GL_ARRAY_BUFFER, layerVbo);
-	glBufferData(GL_ARRAY_BUFFER, layerBufferSize, layers.data(), GL_DYNAMIC_DRAW);
+	// texture indices in texArray
+	size_t layerBufferSize = sizeof(float) * texIndices.size();
+	glGenBuffers(1, &indVbo);
+	glBindBuffer(GL_ARRAY_BUFFER, indVbo);
+	glBufferData(GL_ARRAY_BUFFER, layerBufferSize, texIndices.data(), GL_DYNAMIC_DRAW);
 	glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, sizeof(float), 0);
 	glEnableVertexAttribArray(3);
 
 	glBindVertexArray(0);
-	regenRequired = false;
 }
 
-void Chunk::render(Shader shader, GLuint texArray)
+void Chunk::render()
 {
-	shader.use();
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D_ARRAY, texArray);
 	glBindVertexArray(vao);
-	glDrawArrays(GL_TRIANGLES, 0, vertices.size());
+	glDrawArrays(GL_TRIANGLES, 0, positions.size());
+	glBindVertexArray(0);
 }
 
-void Chunk::clearBuffers()
+void Chunk::clearVBOs()
 {
 	glDeleteBuffers(1, &posVbo);
 	glDeleteBuffers(1, &normVbo);
 	glDeleteBuffers(1, &texVbo);
-	glDeleteBuffers(1, &layerVbo);
+	glDeleteBuffers(1, &indVbo);
 }

@@ -8,6 +8,7 @@
 
 // general
 GLFWwindow* window = nullptr;
+glm::vec2 windowSize(1200, 800);
 GLuint program = 0;
 Camera camera;
 World world;
@@ -138,7 +139,9 @@ GLuint loadCubemap(std::vector<std::string> faces, bool withAlpha = false)
 // Executed each time the window is resized.
 void windowSizeCallback(GLFWwindow* window, int width, int height)
 {
-    camera.setAspectRatio(window);
+    windowSize.x = width;
+    windowSize.y = height;
+    camera.setAspectRatio(windowSize, pointerShader);
     camera.bindProjection(worldShader, playerShader, skyShader);
     glViewport(0, 0, (GLint)width, (GLint)height);
 }
@@ -215,9 +218,7 @@ void initGLFW()
     glfwWindowHint(GLFW_RESIZABLE, GL_TRUE);
 
     // Create the window
-    size_t height = 1200;
-    size_t width = 800;
-    window = glfwCreateWindow(height, width, "MonCrafte", nullptr, nullptr);
+    window = glfwCreateWindow(windowSize.x, windowSize.y, "MonCrafte", nullptr, nullptr);
 
     if (!window)
     {
@@ -346,6 +347,7 @@ void setupShaders()
 
     pointerShader.use();
     pointerShader.setInt("material.textureData", 0);
+    camera.setAspectRatio(windowSize, pointerShader);
 
     worldShader.use();
     worldShader.setInt("material.textureArray", 0);
@@ -370,6 +372,7 @@ void update()
     if ((double)currentFrame - lastTime >= 1.0)
     {
         printf("%f ms/frame\n", 1000.0 / double(nbFrames));
+        //camera.updateFps(std::to_string(nbFrames).c_str());
         nbFrames = 0;
         lastTime += 1.0;
     }
@@ -377,14 +380,14 @@ void update()
 
 void render()
 {
-    camera.bindView(worldShader, playerShader, skyShader);
+    camera.bindView(worldShader, skyShader);
     world.bindLights(worldShader, playerShader);
 
     // render world
     world.render(worldShader, skyShader, camera.getPosition(), camera.getViewDirection());
 
     // render camera
-    camera.render(playerShader, pointerShader, world);
+    camera.render(playerShader, pointerShader, world, windowSize);
 }
 
 void clear()
@@ -423,7 +426,6 @@ int main()
         glm::vec3(0.0, 1.0, 0.0),  // up vector
         textures["font"].getTexID(0));
 
-    camera.setAspectRatio(window);
     camera.insertBlock("sand", 0);
     camera.insertBlock("dirt", 1);
     camera.insertBlock("gravel", 2);

@@ -15,16 +15,16 @@ public:
     glm::mat4 computeViewMatrix() const;
     void updateProjectionMatrix();
 
-    void setAspectRatio(GLFWwindow* window);
+    void setAspectRatio(glm::vec2 windowSize, Shader pointerShader);
+    void updateFps(const char* text);
     void updateCamPos(GLFWwindow* window, float deltaTime, World world);
     void processMouseMoovement(float xoffset, float yoffset, GLboolean constrainPitch = true);
     void processMouseScroll(float yoffset);
     void updateCameraVectors();
 
-    void bindView(Shader worldShader, Shader playerShader, Shader skyShader);
+    void bindView(Shader worldShader, Shader skyShader);
     void bindProjection(Shader worldShader, Shader playerShader, Shader skyShader);
-    void render(Shader playerShader, Shader pointerShader, World world);
-
+    void render(Shader playerShader, Shader pointerShader, World world, glm::vec2 windowSize);
     void insertBlock(std::string texName, unsigned int position);
     void removeBlock(unsigned int position);
     std::string getCurrentBlock() const;
@@ -43,16 +43,19 @@ private:
     float aspectRatio = 1.f; 
     float mouseSensitivity = 0.05f;
     float playerVelociy = 10.f;
-    float near = 0.1f;                  // distance before which geometry is excluded from the rasterization process
-    float far = 250.1f;                  // distance after which the geometry is excluded from the rasterization process
-    float yaw = -90.f;                  // yaw euler angle
-    float pitch = 0.f;                  // pitch euler angle
+    float near = 0.1f;                   // distance before which geometry is excluded from the rasterization process
+    float far = 200.1f;                  // distance after which the geometry is excluded from the rasterization process
+    float yaw = -90.f;                   // yaw euler angle
+    float pitch = 0.f;                   // pitch euler angle
 
     int currentBlock = 0;
     std::vector<std::string> availableBlocks;
     glm::mat4 projMat;
+    bool blockChanged = false;
 
     Text2D pointer;
+    Text2D fpsRatio;
+    BlockPtr block;
 
     GLuint vao = 0;
     GLuint posVbo = 0;

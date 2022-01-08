@@ -7,9 +7,9 @@ struct Material
 uniform Material material;
 
 in vec2 fTex;
-out vec4 color;
+out vec4 FragColor;
 
 void main()
 {
-    color = texture( material.textureData, fTex );
+    FragColor = texture( material.textureData, fTex );
 }

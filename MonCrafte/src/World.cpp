@@ -11,7 +11,7 @@ World::World(std::map<std::string, Texture> textureCollection, GLuint textureArr
 	chunkLimit = std::floor(worldSize / 2);
 
 	chunkMap = std::vector<ChunkPtr>(worldSize * worldSize, nullptr);
-	skybox.initBuffers();
+	skybox.bindVBOs();
 }
 
 int World::chunkIndex(int i, int j)
@@ -364,13 +364,23 @@ void World::bindLights(Shader groundShader, Shader playerShader)
 void World::render(Shader groundShader, Shader skyShader, glm::vec3 camPos, glm::vec3 lookAt)
 {
 	// render skybox
-	skybox.render(skyShader);
+	skyShader.use();
+	skybox.render();
 
 	// render ground
+	groundShader.use();
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D_ARRAY, texArray);
+
 	std::map<float, ChunkPtr> chunkWithTransparency;
 
-	for (int i = -chunkLimit; i <= chunkLimit; i++)
-		for (int j = -chunkLimit; j <= chunkLimit; j++)
+	int minI = std::max((int)std::round(camPos.x / chunkSize.x - renderRadius),-chunkLimit);
+	int maxI = std::min((int)std::round(camPos.x / chunkSize.x + renderRadius), chunkLimit);
+	int minJ = std::max((int)std::round(camPos.z / chunkSize.z - renderRadius),-chunkLimit);
+	int maxJ = std::min((int)std::round(camPos.z / chunkSize.z + renderRadius), chunkLimit);
+
+	for (int i = minI; i <= maxI; i++)
+		for (int j = minJ; j <= maxJ; j++)
 		{
 			ChunkPtr chunk = chunkMap[chunkIndex(i, j)];
 
@@ -379,29 +389,30 @@ void World::render(Shader groundShader, Shader skyShader, glm::vec3 camPos, glm:
 
 			if (chunk->containsTransparentBlocks())
 			{
-				// put chunks containing transparent blocks aside and
+				// put chunks containing transparency aside and
 				// sorted from farest to nearest vertex from the camera
 				float distance = glm::length(glm::vec2(camPos.x, camPos.z) - glm::vec2(i*chunkSize.x, j*chunkSize.z));
 				chunkWithTransparency[distance] = chunk;
 			}
 			// render solid chunk
 			else
-				chunk->render(groundShader, texArray);
+				chunk->render();
 		}
 
 	// render chunks containing transparency last
 	for (std::map<float, ChunkPtr>::reverse_iterator it = chunkWithTransparency.rbegin(); it != chunkWithTransparency.rend(); ++it)
-		it->second->render(groundShader, texArray);
+		it->second->render();
 }
 
 void World::clearBuffers()
 {
-	skybox.clearBuffers();
+	skybox.deleteVAO();
+	skybox.clearVBOs();
 
 	for (int i = -chunkLimit ; i <= chunkLimit ; i++)
 		for (int j = -chunkLimit; j <= chunkLimit; j++)
 		{
 			chunkMap[chunkIndex(i, j)]->deleteVAO();
-			chunkMap[chunkIndex(i, j)]->clearBuffers();
+			chunkMap[chunkIndex(i, j)]->clearVBOs();
 		}
 }

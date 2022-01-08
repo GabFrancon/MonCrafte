@@ -16,9 +16,10 @@ public:
 
 	void generateChunk();
 	void markForRegen() { regenRequired = true; }
-	void render(Shader shader, GLuint texArray);
+	void bindVBOs();
+	void render();
 	void deleteVAO() { glDeleteVertexArrays(1, &vao); }
-	void clearBuffers();
+	void clearVBOs();
 
 private:
 	glm::ivec3 chunkSize; // in terms of number of blocks
@@ -30,12 +31,12 @@ private:
 	GLuint posVbo   = 0;
 	GLuint normVbo  = 0;
 	GLuint texVbo   = 0;
-	GLuint layerVbo = 0;
+	GLuint indVbo   = 0;
 
-	std::vector<float> vertices;
+	std::vector<float> positions;
 	std::vector<float> normals;
-	std::vector<float> uvs;
-	std::vector<float> layers;
+	std::vector<float> texCoords;
+	std::vector<float> texIndices;
 };
 
 typedef std::shared_ptr<Chunk> ChunkPtr;
