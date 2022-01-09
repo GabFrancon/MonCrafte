@@ -434,6 +434,8 @@ int main()
     camera.insertBlock("water", 5);
     camera.insertBlock("leaves", 6);
     camera.insertBlock("stone", 7);
+    camera.insertBlock("wood", 8);
+    camera.insertBlock("grass", 9);
 
     // finally send all the data to the shaders
     setupShaders();

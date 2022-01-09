@@ -337,23 +337,72 @@ void World::genWorld()
 			}
 		}
 
-	for (int i = -chunkLimit ; i <= chunkLimit; i++)
-		for (int j = -chunkLimit ; j <= chunkLimit; j++)
-		{
-			int index = chunkIndex(i, j);
+	for (ChunkPtr chunk : chunkMap)
+	{
+		for (int x = 0; x < chunkSize.x; x++)
+			for (int y = 0; y < chunkSize.y; y++)
+				for (int z = 0; z < chunkSize.z; z++)
+					hideNeighboursFace(chunk->getBlock(glm::ivec3(x, y, z)));
 
-			for (int x = 0; x < chunkSize.x; x++)
-				for (int y = 0; y < chunkSize.y; y++)
-					for (int z = 0; z < chunkSize.z; z++)
-						hideNeighboursFace(chunkMap[index]->getBlock(glm::ivec3(x, y, z)));
+		chunk->markForRegen();
+	}
 
-			chunkMap[index]->markForRegen();
-		}
+	addTree(11, 3, 7);
+	addTree(-14, 4, -18);
+
+
 
 	addLight(
 		glm::vec3(0.0, 50.0, 0.0),						      // position
 		glm::vec3(1.f, 1.f, 1.f));						      // color
 }
+
+void World::addTree(int x, int y, int z)
+{
+	for (int j = y; j < y + 6; j++)
+	{
+		if (j > y + 1 && j < y + 4)
+		{
+			for (int i = x - 2; i < x + 3; i++)
+				for (int k = z - 2; k < z + 3; k++)
+					if (!(i == x - 2 && k == z - 2) && !(i == x - 2 && k == z + 2) && !(i == x + 2 && k == z - 2) && !(i == x + 2 && k == z + 2))
+					{
+						BlockPtr block = getBlock(glm::vec3(i, j, k));
+						block->fillObject(textures["leaves"]);
+					}
+		}
+
+
+		else if (j == y + 4)
+		{
+			for (int i = x - 1; i < x + 2; i++)
+				for (int k = z - 1; k < z + 2; k++)
+				{
+					BlockPtr block = getBlock(glm::vec3(i, j, k));
+					block->fillObject(textures["leaves"]);
+				}
+		}
+
+		else if (j == y + 5)
+		{
+			for (int i = x - 1; i < x + 2; i++)
+				for (int k = z - 1; k < z + 2; k++)
+					if (!(i == x - 1 && k == z - 1) && !(i == x - 1 && k == z + 1) && !(i == x + 1 && k == z - 1) && !(i == x + 1 && k == z + 1))
+					{
+						BlockPtr block = getBlock(glm::vec3(i, j, k));
+						block->fillObject(textures["leaves"]);
+					}
+		}
+
+		if (j < y + 5)
+		{
+			BlockPtr block = getBlock(glm::vec3(x, j, z));
+			block->fillObject(textures["wood"]);
+		}
+
+	}
+}
+
 
 void World::bindLights(Shader groundShader, Shader playerShader)
 {
@@ -374,13 +423,13 @@ void World::render(Shader groundShader, Shader skyShader, glm::vec3 camPos, glm:
 
 	std::map<float, ChunkPtr> chunkWithTransparency;
 
-	int minI = std::max((int)std::round(camPos.x / chunkSize.x - renderRadius),-chunkLimit);
-	int maxI = std::min((int)std::round(camPos.x / chunkSize.x + renderRadius), chunkLimit);
-	int minJ = std::max((int)std::round(camPos.z / chunkSize.z - renderRadius),-chunkLimit);
-	int maxJ = std::min((int)std::round(camPos.z / chunkSize.z + renderRadius), chunkLimit);
+	//int minI = std::max((int)std::round(camPos.x / chunkSize.x - renderRadius),-chunkLimit);
+	//int maxI = std::min((int)std::round(camPos.x / chunkSize.x + renderRadius), chunkLimit);
+	//int minJ = std::max((int)std::round(camPos.z / chunkSize.z - renderRadius),-chunkLimit);
+	//int maxJ = std::min((int)std::round(camPos.z / chunkSize.z + renderRadius), chunkLimit);
 
-	for (int i = minI; i <= maxI; i++)
-		for (int j = minJ; j <= maxJ; j++)
+	for (int i = -chunkLimit; i <= chunkLimit; i++)
+		for (int j = -chunkLimit; j <= chunkLimit; j++)
 		{
 			ChunkPtr chunk = chunkMap[chunkIndex(i, j)];
 
@@ -409,10 +458,9 @@ void World::clearBuffers()
 	skybox.deleteVAO();
 	skybox.clearVBOs();
 
-	for (int i = -chunkLimit ; i <= chunkLimit ; i++)
-		for (int j = -chunkLimit; j <= chunkLimit; j++)
-		{
-			chunkMap[chunkIndex(i, j)]->deleteVAO();
-			chunkMap[chunkIndex(i, j)]->clearVBOs();
-		}
+	for (ChunkPtr chunk : chunkMap)
+	{
+		chunk->deleteVAO();
+		chunk->clearVBOs();
+	}
 }

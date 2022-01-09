@@ -17,7 +17,7 @@ class World
 {
 private:
 	// chunks
-	int worldSize = 25;								 // in terms of number of chunks
+	int worldSize = 5;								 // in terms of number of chunks
 	int renderRadius = 10;							 // in terms of number of chunks
 	glm::ivec3 chunkSize = glm::ivec3(15, 60, 15);   // in terms of number of blocks
 
@@ -74,6 +74,7 @@ public:
 
 	// generation and rendering
 	void genWorld();
+	void addTree(int x, int y, int z);
 	void bindLights(Shader groundShader, Shader playerShader);
 	void render(Shader groundShader, Shader skyShader, glm::vec3 camPos, glm::vec3 lookAt);
 	void clearBuffers();
