@@ -7,13 +7,12 @@ class GameObject
 {
 protected:
 	glm::vec3 position;
-	glm::vec3 size;
 	Texture texture;
 	Type type;
 
 public:
-	GameObject(glm::vec3 _position, Texture _texture, float _size=1.0f)
-		: position(_position), texture(_texture), size(glm::vec3(_size)), type(texture.getType()) {}
+	GameObject(glm::vec3 _position, Texture _texture)
+		: position(_position), texture(_texture), type(texture.getType()) {}
 
 	glm::vec3 getPosition() const { return position; }
 	Texture getTexture() const { return texture; }
@@ -23,7 +22,6 @@ public:
 	bool isEmpty() { return type == Type::AIR; }
 
 	void setPosition(glm::vec3 position) { this->position = position;}
-	void setSize(float size) { this->size = glm::vec3(size); }
 
 	virtual void fillObject(Texture texture)
 	{

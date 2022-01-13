@@ -4,7 +4,7 @@
 #include "Chunk.h"
 #include "Light.h"
 #include "Skybox.h"
-#include "PerlinNoise.h"
+#include "BiomeHelper.h"
 
 struct Selection {
 	BlockPtr object;
@@ -17,7 +17,7 @@ class World
 {
 private:
 	// chunks
-	int worldSize = 5;								 // in terms of number of chunks
+	int worldSize = 15;								 // in terms of number of chunks
 	int renderRadius = 10;							 // in terms of number of chunks
 	glm::ivec3 chunkSize = glm::ivec3(15, 60, 15);   // in terms of number of blocks
 
@@ -27,6 +27,7 @@ private:
 	int chunkLimit = 0;
 
 	std::vector<ChunkPtr> chunkMap;
+	BiomeHelper biomeHelper;
 	Selection selection;
 
 	// lights

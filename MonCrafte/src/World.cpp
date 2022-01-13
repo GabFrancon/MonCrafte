@@ -12,6 +12,7 @@ World::World(std::map<std::string, Texture> textureCollection, GLuint textureArr
 
 	chunkMap = std::vector<ChunkPtr>(worldSize * worldSize, nullptr);
 	skybox.bindVBOs();
+	biomeHelper = BiomeHelper(worldSize);
 }
 
 int World::chunkIndex(int i, int j)
@@ -287,15 +288,14 @@ void World::showNeighboursFace(BlockPtr block)
 
 void World::genWorld()
 {
-	PerlinNoise* noise = new PerlinNoise(7, 4, 1, 93);
-	float increment = 0.01;
-	int seaLevel = 0;
+	// first generate ground (CPU side)
 
 	for (int i = -chunkLimit ; i <= chunkLimit ; i++)
 		for (int j = -chunkLimit ; j <= chunkLimit ; j++)
-		{
+		{	
 			int index = chunkIndex(i, j);
 			chunkMap[index] = std::make_shared<Chunk>(chunkSize);
+			glm::ivec2 chunkPos(i, j);
 
 			/*auto it = textures.begin();
 			do {
@@ -303,17 +303,14 @@ void World::genWorld()
 				std::advance(it, rand() % textures.size());
 			} while (it->second.getType() == Type::TRANSPARENT);*/
 
-			for (int x = 0; x < chunkSize.x; x++) {
-				for (int z = 0; z < chunkSize.z; z++) {
-
-					int heightMapX = (i + chunkLimit) * chunkSize.x + x;
-					int heightMapY = (j + chunkLimit) * chunkSize.z + z;
-					float height = noise->Get(heightMapX * increment, heightMapY * increment) * 13 + 3;
-
+			for (int x = 0; x < chunkSize.x; x++)
+				for (int z = 0; z < chunkSize.z; z++)
 					for (int y = 0; y < chunkSize.y; y++)
 					{
 						glm::ivec3 posInChunk = glm::ivec3(x, y, z);
-						glm::ivec3 blockPos = toWorldCoord(posInChunk, glm::ivec2(i, j));
+						glm::ivec3 blockPos = toWorldCoord(posInChunk, chunkPos);
+
+						float height = biomeHelper.getHeight(blockPos.x, blockPos.z, chunkPos);
 
 						if (blockPos.y < height - 4)
 							chunkMap[index]->setBlock(posInChunk, std::make_shared<Block>(blockPos, textures["stone"]));
@@ -321,22 +318,52 @@ void World::genWorld()
 						else if (blockPos.y < height - 1)
 							chunkMap[index]->setBlock(posInChunk, std::make_shared<Block>(blockPos, textures["dirt"]));
 
-						else if(blockPos.y < height && height < seaLevel)
+						else if(blockPos.y < height && height <= 0)
 							chunkMap[index]->setBlock(posInChunk, std::make_shared<Block>(blockPos, textures["gravel"]));
 
-						else if (blockPos.y < height && height >= seaLevel)
+						else if (blockPos.y < height && height > 0)
 							chunkMap[index]->setBlock(posInChunk, std::make_shared<Block>(blockPos, textures["grass"]));
 
-						else if (blockPos.y <= seaLevel)
+						else if (blockPos.y <= 0)
 							chunkMap[index]->setBlock(posInChunk, std::make_shared<Block>(blockPos, textures["water"]));
 
 						else
 							chunkMap[index]->setBlock(posInChunk, std::make_shared<Block>(blockPos, Texture()));
 					}
-				}
+		}
+	// then add decorations (only trees for the moment, CPU side)
+	for (int i = -chunkLimit+1; i <= chunkLimit-1; i++)
+		for (int j = -chunkLimit+1; j <= chunkLimit-1; j++)
+		{
+			glm::vec2 chunkPos(i, j);
+			for(int count = 0; count < 7 ; count++)
+			{
+				int x = rand() % chunkSize.x;
+				int z = rand() % chunkSize.z;
+				glm::vec3 blockPos = toWorldCoord(glm::ivec3(x, (int)chunkSize.y/2, z), chunkPos);
+
+				if(isInWorld(blockPos))
+					if (!getBlock(blockPos)->isTransparent())
+					{
+						int height = biomeHelper.getHeight(blockPos.x, blockPos.z, chunkPos);
+						bool treeCanBeGen = true;
+
+						for (int a = blockPos.x - 3; a <= blockPos.x + 3; a++)
+							for (int b = blockPos.z - 3; b <= blockPos.z + 3; b++)
+							{
+								glm::vec3 neighborPos = glm::vec3(a, height, b);
+								if (isInWorld(neighborPos))
+									if (!getBlock(neighborPos)->isEmpty())
+										treeCanBeGen = false;
+							}
+
+						if (treeCanBeGen)
+							addTree(blockPos.x, height, blockPos.z);
+					}
 			}
 		}
 
+	// generate chunk meshes based on the visible faces (GPU side)
 	for (ChunkPtr chunk : chunkMap)
 	{
 		for (int x = 0; x < chunkSize.x; x++)
@@ -347,11 +374,7 @@ void World::genWorld()
 		chunk->markForRegen();
 	}
 
-	addTree(11, 3, 7);
-	addTree(-14, 4, -18);
-
-
-
+	// finally add some lightning to the scene
 	addLight(
 		glm::vec3(0.0, 50.0, 0.0),						      // position
 		glm::vec3(1.f, 1.f, 1.f));						      // color
@@ -371,8 +394,6 @@ void World::addTree(int x, int y, int z)
 						block->fillObject(textures["leaves"]);
 					}
 		}
-
-
 		else if (j == y + 4)
 		{
 			for (int i = x - 1; i < x + 2; i++)
@@ -382,7 +403,6 @@ void World::addTree(int x, int y, int z)
 					block->fillObject(textures["leaves"]);
 				}
 		}
-
 		else if (j == y + 5)
 		{
 			for (int i = x - 1; i < x + 2; i++)
@@ -394,7 +414,7 @@ void World::addTree(int x, int y, int z)
 					}
 		}
 
-		if (j < y + 5)
+		if (j < y + 4)
 		{
 			BlockPtr block = getBlock(glm::vec3(x, j, z));
 			block->fillObject(textures["wood"]);
@@ -402,7 +422,6 @@ void World::addTree(int x, int y, int z)
 
 	}
 }
-
 
 void World::bindLights(Shader groundShader, Shader playerShader)
 {
@@ -438,8 +457,7 @@ void World::render(Shader groundShader, Shader skyShader, glm::vec3 camPos, glm:
 
 			if (chunk->containsTransparentBlocks())
 			{
-				// put chunks containing transparency aside and
-				// sorted from farest to nearest vertex from the camera
+				// put chunks containing transparency aside and sorted from farest to nearest vertex from the camera
 				float distance = glm::length(glm::vec2(camPos.x, camPos.z) - glm::vec2(i*chunkSize.x, j*chunkSize.z));
 				chunkWithTransparency[distance] = chunk;
 			}

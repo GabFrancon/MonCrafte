@@ -13,7 +13,7 @@ public:
     PerlinNoise(int octaves, float freq, float amp, int seed);
 
 
-    float Get(float x, float y)
+    float get(float x, float y)
     {
         float vec[2];
         vec[0] = x;
@@ -41,7 +41,6 @@ private:
     float g2[SAMPLE_SIZE + SAMPLE_SIZE + 2][2];
     float g1[SAMPLE_SIZE + SAMPLE_SIZE + 2];
     bool  mStart;
-
 };
 
 #endif //!PERLIN_H

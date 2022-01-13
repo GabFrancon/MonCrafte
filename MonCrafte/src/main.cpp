@@ -421,7 +421,7 @@ int main()
 
     // setup the camera (player + pointer)
     camera = Camera(
-        glm::vec3(0.0, 10.0, 0.0),  // position
+        glm::vec3(0.0, 25.0, 0.0),  // position
         glm::vec3(0.0, 0.0, -1.0), // front vector
         glm::vec3(0.0, 1.0, 0.0),  // up vector
         textures["font"].getTexID(0));

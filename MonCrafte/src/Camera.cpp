@@ -4,11 +4,9 @@ Camera::Camera(glm::vec3 position, glm::vec3 front, glm::vec3 up, GLuint pointer
     camPos(position), camFront(front), camUp(up), worldUp(up), 
     availableBlocks(std::vector<std::string>(10, "None")), 
     pointer(Text2D("X", 1, glm::vec2(0.5, 0.5), 40, pointerTexture))
-    //fpsRatio(Text2D("000", 3, glm::vec2(0.9, 0.9), 35, pointerTexture))
 {
     updateCameraVectors();
     pointer.bindVBOs();
-    //fpsRatio.bindVBOs();
 
     Texture tex;
     tex.addSample(0, 0);
@@ -64,15 +62,10 @@ void Camera::clearBuffers()
 void Camera::setAspectRatio(glm::vec2 windowSize, Shader pointerShader)
 {
     aspectRatio = static_cast<float>(windowSize.x) / static_cast<float>(windowSize.y);
-    updateProjectionMatrix();
+    
     pointerShader.use();
     pointerShader.setVec2("viewport", windowSize);
-}
-
-void Camera::updateFps(const char* text)
-{
-    fpsRatio.updateText(text);
-    fpsRatio.bindVBOs();
+    pointerShader.setVec2("offset", pointer.getOffset() * windowSize - glm::vec2(std::ceil(pointer.getLength() * pointer.getSize() / 2), 0));
 }
 
 glm::vec3 Camera::getPosition() const {return camPos;}
@@ -81,7 +74,7 @@ glm::vec3 Camera::getViewDirection() const {return camFront;}
 
 glm::mat4 Camera::computeViewMatrix() const {return glm::lookAt(camPos, camPos + camFront, camUp);}
 
-void Camera::updateProjectionMatrix() {projMat = glm::perspective(glm::radians(55.f), aspectRatio, near, far);}
+glm::mat4 Camera::computeProjectionMatrix() const {return glm::perspective(glm::radians(55.f), aspectRatio, near, far);}
 
 std::string Camera::getCurrentBlock() const { return availableBlocks[currentBlock]; }
 
@@ -172,6 +165,8 @@ void Camera::bindView(Shader worldShader, Shader skyShader)
 
 void Camera::bindProjection(Shader worldShader, Shader playerShader, Shader skyShader)
 {
+    glm::mat4 projMat = computeProjectionMatrix();
+
     worldShader.use();
     worldShader.setMat4("projMat", projMat);
 
@@ -210,8 +205,5 @@ void Camera::render(Shader playerShader, Shader pointerShader, World world, glm:
     }
 
     pointerShader.use();
-    pointerShader.setVec2("offset", pointer.getOffset() * windowSize - glm::vec2(std::ceil(pointer.getLength() * pointer.getSize() / 2), 0));
     pointer.render();
-    //pointerShader.setVec2("offset", fpsRatio.getOffset() * windowSize - glm::vec2(std::ceil(fpsRatio.getLength() * fpsRatio.getSize() / 2), 0));
-    //fpsRatio.render();
 }

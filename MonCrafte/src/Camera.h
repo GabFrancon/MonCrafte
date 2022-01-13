@@ -13,10 +13,9 @@ public:
     glm::vec3 getPosition() const;
     glm::vec3 getViewDirection() const;
     glm::mat4 computeViewMatrix() const;
-    void updateProjectionMatrix();
+    glm::mat4 computeProjectionMatrix() const;
 
     void setAspectRatio(glm::vec2 windowSize, Shader pointerShader);
-    void updateFps(const char* text);
     void updateCamPos(GLFWwindow* window, float deltaTime, World world);
     void processMouseMoovement(float xoffset, float yoffset, GLboolean constrainPitch = true);
     void processMouseScroll(float yoffset);
@@ -50,11 +49,8 @@ private:
 
     int currentBlock = 0;
     std::vector<std::string> availableBlocks;
-    glm::mat4 projMat;
-    bool blockChanged = false;
 
     Text2D pointer;
-    Text2D fpsRatio;
     BlockPtr block;
 
     GLuint vao = 0;
