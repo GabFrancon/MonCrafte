@@ -1,9 +1,9 @@
 #include "World.h"
 
 World::World(std::map<std::string, Texture> textureCollection, GLuint textureArray, GLuint skyTexture) :
-	textures(textureCollection),
 	texArray(textureArray),
-	skybox(Skybox(skyTexture))
+	skybox(Skybox(skyTexture)),
+	biomeHelper(BiomeHelper(textureCollection, worldSize))
 {
 	xLimit     = std::floor(chunkSize.x * worldSize / 2);
 	yLimit     = std::floor(chunkSize.y / 2) - 1;
@@ -12,7 +12,6 @@ World::World(std::map<std::string, Texture> textureCollection, GLuint textureArr
 
 	chunkMap = std::vector<ChunkPtr>(worldSize * worldSize, nullptr);
 	skybox.bindVBOs();
-	biomeHelper = BiomeHelper(worldSize);
 }
 
 int World::chunkIndex(int i, int j)
@@ -78,7 +77,7 @@ void World::addBlock(std::string texName)
 		if (isInWorld(position))
 		{
 			BlockPtr newBlock = getBlock(position);
-			newBlock->fillObject(textures[texName]);
+			newBlock->fillObject(biomeHelper.getTexture(texName));
 			hideNeighboursFace(newBlock);
 		}
 	}
@@ -296,6 +295,7 @@ void World::genWorld()
 			int index = chunkIndex(i, j);
 			chunkMap[index] = std::make_shared<Chunk>(chunkSize);
 			glm::ivec2 chunkPos(i, j);
+			Biome biome = biomeHelper.getRelatedBiome(chunkPos);
 
 			/*auto it = textures.begin();
 			do {
@@ -309,40 +309,25 @@ void World::genWorld()
 					{
 						glm::ivec3 posInChunk = glm::ivec3(x, y, z);
 						glm::ivec3 blockPos = toWorldCoord(posInChunk, chunkPos);
-
-						float height = biomeHelper.getHeight(blockPos.x, blockPos.z, chunkPos);
-
-						if (blockPos.y < height - 4)
-							chunkMap[index]->setBlock(posInChunk, std::make_shared<Block>(blockPos, textures["stone"]));
-
-						else if (blockPos.y < height - 1)
-							chunkMap[index]->setBlock(posInChunk, std::make_shared<Block>(blockPos, textures["dirt"]));
-
-						else if(blockPos.y < height && height <= 0)
-							chunkMap[index]->setBlock(posInChunk, std::make_shared<Block>(blockPos, textures["gravel"]));
-
-						else if (blockPos.y < height && height > 0)
-							chunkMap[index]->setBlock(posInChunk, std::make_shared<Block>(blockPos, textures["grass"]));
-
-						else if (blockPos.y <= 0)
-							chunkMap[index]->setBlock(posInChunk, std::make_shared<Block>(blockPos, textures["water"]));
-
-						else
-							chunkMap[index]->setBlock(posInChunk, std::make_shared<Block>(blockPos, Texture()));
+						BlockPtr element = biomeHelper.genElement(blockPos, chunkPos);
+						chunkMap[index]->setBlock(posInChunk, element);
 					}
 		}
+
 	// then add decorations (only trees for the moment, CPU side)
-	for (int i = -chunkLimit+1; i <= chunkLimit-1; i++)
-		for (int j = -chunkLimit+1; j <= chunkLimit-1; j++)
+	for (int i = -chunkLimit; i <= chunkLimit; i++)
+		for (int j = -chunkLimit; j <= chunkLimit; j++)
 		{
 			glm::vec2 chunkPos(i, j);
-			for(int count = 0; count < 7 ; count++)
+			Biome biome = biomeHelper.getRelatedBiome(chunkPos);
+			for(int count = 0; count < biome.treeDensity ; count++)
 			{
 				int x = rand() % chunkSize.x;
 				int z = rand() % chunkSize.z;
 				glm::vec3 blockPos = toWorldCoord(glm::ivec3(x, (int)chunkSize.y/2, z), chunkPos);
 
-				if(isInWorld(blockPos))
+				if (isInWorld(blockPos))
+				{
 					if (!getBlock(blockPos)->isTransparent())
 					{
 						int height = biomeHelper.getHeight(blockPos.x, blockPos.z, chunkPos);
@@ -353,13 +338,18 @@ void World::genWorld()
 							{
 								glm::vec3 neighborPos = glm::vec3(a, height, b);
 								if (isInWorld(neighborPos))
+								{
 									if (!getBlock(neighborPos)->isEmpty())
 										treeCanBeGen = false;
+								}
+								else
+									treeCanBeGen = false;
 							}
-
 						if (treeCanBeGen)
 							addTree(blockPos.x, height, blockPos.z);
 					}
+				}
+
 			}
 		}
 
@@ -382,6 +372,9 @@ void World::genWorld()
 
 void World::addTree(int x, int y, int z)
 {
+	Texture leaves = biomeHelper.getTexture("leaves");
+	Texture wood = biomeHelper.getTexture("wood");
+
 	for (int j = y; j < y + 6; j++)
 	{
 		if (j > y + 1 && j < y + 4)
@@ -391,7 +384,7 @@ void World::addTree(int x, int y, int z)
 					if (!(i == x - 2 && k == z - 2) && !(i == x - 2 && k == z + 2) && !(i == x + 2 && k == z - 2) && !(i == x + 2 && k == z + 2))
 					{
 						BlockPtr block = getBlock(glm::vec3(i, j, k));
-						block->fillObject(textures["leaves"]);
+						block->fillObject(leaves);
 					}
 		}
 		else if (j == y + 4)
@@ -400,7 +393,7 @@ void World::addTree(int x, int y, int z)
 				for (int k = z - 1; k < z + 2; k++)
 				{
 					BlockPtr block = getBlock(glm::vec3(i, j, k));
-					block->fillObject(textures["leaves"]);
+					block->fillObject(leaves);
 				}
 		}
 		else if (j == y + 5)
@@ -410,16 +403,15 @@ void World::addTree(int x, int y, int z)
 					if (!(i == x - 1 && k == z - 1) && !(i == x - 1 && k == z + 1) && !(i == x + 1 && k == z - 1) && !(i == x + 1 && k == z + 1))
 					{
 						BlockPtr block = getBlock(glm::vec3(i, j, k));
-						block->fillObject(textures["leaves"]);
+						block->fillObject(leaves);
 					}
 		}
 
 		if (j < y + 4)
 		{
 			BlockPtr block = getBlock(glm::vec3(x, j, z));
-			block->fillObject(textures["wood"]);
+			block->fillObject(wood);
 		}
-
 	}
 }
 

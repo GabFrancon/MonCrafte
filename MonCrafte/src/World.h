@@ -34,7 +34,6 @@ private:
 	std::vector<LightPtr> lights;
 
 	// textures
-	std::map<std::string, Texture> textures;
 	GLuint texArray = 0;
 
 	// skybox
@@ -44,7 +43,7 @@ public:
 	World() {};
 	World(std::map<std::string, Texture> textureCollection, GLuint textureArray, GLuint skyTexture);
 
-	Texture getTexture(std::string name) { return textures[name]; }
+	Texture getTexture(std::string name) { return biomeHelper.getTexture(name); }
 
 	// coordinates
 	glm::ivec3 toChunkCoord(glm::ivec3 pos, glm::ivec2 chunkPos);
