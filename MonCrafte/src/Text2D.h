@@ -1,7 +1,7 @@
 #ifndef TEXT2D_H
 #define TEXT2D_H
 
-#include "Shader.h"
+#include "utils.h"
 
 class Text2D
 {

@@ -1,7 +1,7 @@
 #ifndef SHADER_H
 #define SHADER_H
 
-#include "Texture.h"
+#include "utils.h"
 
 class Shader
 {

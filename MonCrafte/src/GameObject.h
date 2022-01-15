@@ -1,7 +1,8 @@
 #ifndef GAMEOBJECT_H
 #define GAMEOBJECT_H
 
-#include "Shader.h"
+#include "utils.h"
+#include "Texture.h"
 
 class GameObject
 {

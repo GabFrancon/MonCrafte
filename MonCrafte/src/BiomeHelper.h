@@ -1,13 +1,13 @@
-#include "Shader.h"
+#include "utils.h"
 #include "PerlinNoise.h"
 #include "Block.h"
 
-enum class BiomeType { OCEAN, PLAIN, FOREST, DESERT, VALLEY, HILL, TRANSITION };
+enum class BiomeType { OCEAN, PLAIN, FOREST, DESERT, VALLEY, HILL};
 
 struct Biome
 {
 	BiomeType type = BiomeType::PLAIN;
-	float maxHeight;
+	float amplitude;
 	float offset;
 	int treeDensity;
 	std::string mainTex, subTex;
@@ -16,7 +16,7 @@ struct Biome
 	{
 		// default parameters
 		this->type = type;
-		this->maxHeight = 5;
+		this->amplitude = 5;
 		this->offset = 3;
 		this->treeDensity = 0;
 		this->mainTex = "grass";
@@ -25,32 +25,32 @@ struct Biome
 		switch (type)
 		{
 		case BiomeType::OCEAN:
-			maxHeight = 10;
+			amplitude = 7;
 			offset = -15;
 			break;
 		case BiomeType::PLAIN:
-			maxHeight = 5;
+			amplitude = 5;
 			offset = 3;
 			break;
 		case BiomeType::FOREST:
-			maxHeight = 5;
+			amplitude = 5;
 			offset = 3;
 			treeDensity = 16;
 			break;
 		case BiomeType::DESERT:
-			maxHeight = 6;
+			amplitude = 5;
 			offset = 4;
 			mainTex = "sand";
 			subTex = "sand";
 			break;
 		case BiomeType::VALLEY:
-			maxHeight = 10;
-			offset = 5;
-			treeDensity = 3;
+			amplitude = 9;
+			offset = 7;
+			treeDensity = 2;
 			break;
 		case BiomeType::HILL:
-			maxHeight = 25;
-			offset = 12;
+			amplitude = 25;
+			offset = 16;
 			treeDensity = 2;
 			break;
 		}
@@ -69,7 +69,7 @@ public:
 		this->biomeLimit = (int)std::floor(this->worldSize / 2);
 		this->textures = textures;
 		biomeMap = std::vector<Biome>(this->worldSize * this->worldSize, Biome(BiomeType::PLAIN));
-		biomeMap[biomeIndex(-1,-1)] = Biome(BiomeType::FOREST);
+		/*biomeMap[biomeIndex(-1,-1)] = Biome(BiomeType::FOREST);
 		biomeMap[biomeIndex( 0,-1)] = Biome(BiomeType::FOREST);
 		biomeMap[biomeIndex( 1,-1)] = Biome(BiomeType::DESERT);
 		biomeMap[biomeIndex(-1, 0)] = Biome(BiomeType::VALLEY);
@@ -77,7 +77,9 @@ public:
 		biomeMap[biomeIndex( 1, 0)] = Biome(BiomeType::DESERT);
 		biomeMap[biomeIndex(-1, 1)] = Biome(BiomeType::VALLEY);
 		biomeMap[biomeIndex( 0, 1)] = Biome(BiomeType::HILL);
-		biomeMap[biomeIndex( 1, 1)] = Biome(BiomeType::OCEAN);
+		biomeMap[biomeIndex( 1, 1)] = Biome(BiomeType::OCEAN);*/
+		for(int i = 0 ; i < biomeMap.size() ; i++)
+			biomeMap[i] = Biome(static_cast<BiomeType>(std::rand() % 5));
 	}
 
 	Texture getTexture(std::string name) { return textures[name]; }
@@ -113,16 +115,35 @@ public:
 
 	std::vector<int> interpolate(int x, int z, glm::ivec2 chunkPos)
 	{
-		Biome leftBiome  = getRelatedBiome(chunkPos - glm::ivec2(1, 0));
-		Biome rightBiome = getRelatedBiome(chunkPos + glm::ivec2(1, 0));
-		Biome backBiome  = getRelatedBiome(chunkPos - glm::ivec2(0, 1));
-		Biome frontBiome = getRelatedBiome(chunkPos + glm::ivec2(0, 1));
+		Biome biome = getRelatedBiome(chunkPos);
+
+		Biome leftBiome  = getRelatedBiome(chunkPos + glm::ivec2(-1, 0));
+		Biome rightBiome = getRelatedBiome(chunkPos + glm::ivec2( 1, 0));
+		Biome backBiome  = getRelatedBiome(chunkPos + glm::ivec2( 0,-1));
+		Biome frontBiome = getRelatedBiome(chunkPos + glm::ivec2( 0, 1));
+
+		Biome topLeftBiome     = getRelatedBiome(chunkPos + glm::ivec2(-1, 1));
+		Biome topRightBiome    = getRelatedBiome(chunkPos + glm::ivec2( 1, 1));
+		Biome bottomLeftBiome  = getRelatedBiome(chunkPos + glm::ivec2(-1,-1));
+		Biome bottomRightBiome = getRelatedBiome(chunkPos + glm::ivec2( 1,-1));
 
 		float deltaX = (x - chunkSize * chunkPos.x + std::floor((float)chunkSize / 2)) / chunkSize;
 		float deltaZ = (z - chunkSize * chunkPos.y + std::floor((float)chunkSize / 2)) / chunkSize;
 
-		int amplitude = std::round((deltaX * rightBiome.maxHeight + (1 - deltaX) * leftBiome.maxHeight + deltaZ * frontBiome.maxHeight + (1 - deltaZ) * backBiome.maxHeight) / 2);
-		int offset    = std::round((deltaX * rightBiome.offset    + (1 - deltaX) * leftBiome.offset    + deltaZ * frontBiome.offset    + (1 - deltaZ) * backBiome.offset)    / 2);
+		int amplitude = (
+			  deltaX * rightBiome.amplitude + (1 - deltaX) * leftBiome.amplitude
+			+ deltaZ * frontBiome.amplitude + (1 - deltaZ) * backBiome.amplitude
+			+ (bottomLeftBiome.amplitude * (1 - deltaX) + bottomRightBiome.amplitude * deltaX) * (1 - deltaZ)
+			+ (topLeftBiome.amplitude * (1 - deltaX) + topRightBiome.amplitude * deltaX) * deltaZ) / 3;
+
+		int offset = (
+			  deltaX * rightBiome.offset    + (1 - deltaX) * leftBiome.offset
+			+ deltaZ * frontBiome.offset    + (1 - deltaZ) * backBiome.offset
+			+ (bottomLeftBiome.offset * (1 - deltaX) + bottomRightBiome.offset * deltaX) * (1 - deltaZ) 
+			+ (topLeftBiome.offset * (1 - deltaX) + topRightBiome.offset * deltaX) * deltaZ)    / 3;
+		
+		amplitude = (1.5 * amplitude + 0.5 * biome.amplitude) / 2;
+		offset    = (1.5 * offset    + 0.5 * biome.offset)    / 2;
 
 		return std::vector<int>{amplitude, offset};
 	}
