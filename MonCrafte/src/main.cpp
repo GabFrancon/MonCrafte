@@ -12,12 +12,14 @@ glm::vec2 windowSize(1200, 800);
 GLuint program = 0;
 Camera camera;
 World world;
+LightPtr light;
 
 // shaders
 Shader worldShader;
 Shader playerShader;
 Shader pointerShader;
 Shader skyShader;
+Shader shadowMapShader;
 
 // time
 float currentFrame = 0.f;
@@ -82,7 +84,7 @@ GLuint loadTexture(const std::string& filename)
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
     // fills the GPU texture with the data stored in the CPU image
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);  
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
     glBindTexture(GL_TEXTURE_2D, 0);
 
     // adds the texture to the array
@@ -136,6 +138,44 @@ GLuint loadCubemap(std::vector<std::string> faces, bool withAlpha = false)
 
     return textureID;
 }
+
+FboShadowMap allocateShadowMapFbo(unsigned int width = 1024, unsigned int height = 768)
+{
+    FboShadowMap fbo;
+    glGenFramebuffers(1, &fbo._depthMapFbo);
+    glBindFramebuffer(GL_FRAMEBUFFER, fbo._depthMapFbo);
+
+    fbo._depthMapTextureWidth = width;
+    fbo._depthMapTextureHeight = height;
+
+    // Depth texture. Slower than a depth buffer, but you can sample it later in your shader
+    glGenTextures(1, &fbo._depthMapTexture);
+    glActiveTexture(GL_TEXTURE1);
+    glBindTexture(GL_TEXTURE_2D, fbo._depthMapTexture);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT16, width, height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, 0);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+    float borderColor[] = { 1.0f, 1.0f, 1.0f, 1.0f };
+    glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
+
+    glFramebufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, fbo._depthMapTexture, 0);
+
+    glDrawBuffer(GL_NONE);      // No color buffers are written.
+
+    if (glCheckFramebufferStatus(GL_FRAMEBUFFER) == GL_FRAMEBUFFER_COMPLETE)
+    {
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    }
+    else
+    {
+        std::cout << "PROBLEM IN FBO FboShadowMap::allocate(): FBO NOT successfully created" << std::endl;
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    }
+    return fbo;
+}
+
 // Executed each time the window is resized.
 void windowSizeCallback(GLFWwindow* window, int width, int height)
 {
@@ -149,15 +189,17 @@ void windowSizeCallback(GLFWwindow* window, int width, int height)
 // Executed each time a key is pressed.
 void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
-    if (action == GLFW_PRESS && key == GLFW_KEY_E) {
+    if (action == GLFW_PRESS && key == GLFW_KEY_E)
         glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-    }
-    else if (action == GLFW_PRESS && key == GLFW_KEY_F) {
+
+    else if (action == GLFW_PRESS && key == GLFW_KEY_F)
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-    }
-    else if (action == GLFW_PRESS && key == GLFW_KEY_ESCAPE) {
+
+    else if (action == GLFW_PRESS && key == GLFW_KEY_G)
+        world.saveShadowMap();
+
+    else if (action == GLFW_PRESS && key == GLFW_KEY_ESCAPE)
         glfwSetWindowShouldClose(window, true);
-    }
 }
 
 // Executed each time the mouse is mooved.
@@ -344,6 +386,7 @@ void setupShaders()
     playerShader  = Shader("shader/playerVertexShader.glsl", "shader/playerFragShader.glsl");
     pointerShader = Shader("shader/textVertexShader.glsl", "shader/textFragShader.glsl");
     skyShader     = Shader("shader/skyboxVertexShader.glsl", "shader/skyboxFragShader.glsl");
+    shadowMapShader = Shader("shader/shadowMapVertexShader.glsl", "shader/shadowMapFragShader.glsl");
 
     pointerShader.use();
     pointerShader.setInt("material.textureData", 0);
@@ -351,6 +394,7 @@ void setupShaders()
 
     worldShader.use();
     worldShader.setInt("material.textureArray", 0);
+    worldShader.setInt("depthMap", 1);
 
     playerShader.use();
     playerShader.setInt("material.textureData", 0);
@@ -366,13 +410,18 @@ void update()
 {
     camera.updateCamPos(window, currentFrame - lastFrame, world);
     world.updateSelection(camera.getPosition(), camera.getViewDirection());
+    
+    float lightX = 100.f * glm::cos(2 * M_PI * currentFrame / 30);
+    float lightY = 75.f * std::abs(glm::sin(2 * M_PI * currentFrame / 30));
+    float lightZ = 100.f * glm::cos(2 * M_PI * currentFrame / 30);
+
+    light->setPosition(glm::vec3(lightX, lightY, lightZ));
 
     // Measure speed
     nbFrames++;
     if ((double)currentFrame - lastTime >= 1.0)
     {
         printf("%f ms/frame\n", 1000.0 / double(nbFrames));
-        //camera.updateFps(std::to_string(nbFrames).c_str());
         nbFrames = 0;
         lastTime += 1.0;
     }
@@ -384,6 +433,12 @@ void render()
     world.bindLights(worldShader, playerShader);
 
     // render world
+    world.renderForShadowMap(shadowMapShader,camera.getPosition());
+
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glViewport(0, 0, windowSize.x, windowSize.y);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
     world.render(worldShader, skyShader, camera.getPosition(), camera.getViewDirection());
 
     // render camera
@@ -394,7 +449,7 @@ void clear()
 {
     world.clearBuffers();
     camera.clearBuffers();
-  
+
     glDeleteProgram(program);
     glfwDestroyWindow(window);
     glfwTerminate();
@@ -415,9 +470,17 @@ int main()
     "texture/skybox/default/front.bmp",
     "texture/skybox/default/back.bmp" };
 
+    FboShadowMap fbo = allocateShadowMapFbo(2000, 2000);
+
     // setup the world (ground + light)
+    light = std::make_shared<Light>(
+        glm::vec3(100.0, 75.0,100.0),					      // position
+        glm::vec3(1.f, 1.f, 1.f), 						      // color
+        fbo);                                                 // frame buffer
+
     world = World(textures, arrayTexture, loadCubemap(faces));
     world.genWorld();
+    world.addLight(light);
 
     // setup the camera (player + pointer)
     camera = Camera(

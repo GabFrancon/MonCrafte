@@ -34,6 +34,7 @@ private:
 
 	// lights
 	std::vector<LightPtr> lights;
+	bool saveShadowMapPpm = false;
 
 	// textures
 	GLuint texArray = 0;
@@ -64,7 +65,7 @@ public:
 	std::map<std::string, BlockPtr> getNeighbours(BlockPtr block);
 
 	// lights
-	void addLight(glm::vec3 position, glm::vec3 color);
+	void addLight(LightPtr light);
 	void destroyLight(unsigned int index);
 
 	// collision and selection
@@ -78,11 +79,10 @@ public:
 	void genWorld();
 	void addTree(int x, int y, int z);
 	void bindLights(Shader groundShader, Shader playerShader);
+	void saveShadowMap() { saveShadowMapPpm = true; }
+	void renderForShadowMap(Shader shadowMapShader, glm::vec3 camPos);
 	void render(Shader groundShader, Shader skyShader, glm::vec3 camPos, glm::vec3 lookAt);
 	void clearBuffers();
 };
 
 #endif // !WORLD_H
-
-
-

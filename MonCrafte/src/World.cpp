@@ -99,9 +99,9 @@ void World::markChunkForRegen(BlockPtr block)
 }
 
 
-void World::addLight(glm::vec3 position, glm::vec3 color)
+void World::addLight(LightPtr light)
 {
-	lights.push_back(std::make_shared<Light>(position, color));
+	lights.push_back(light);
 }
 
 void World::destroyLight(unsigned int index)
@@ -190,13 +190,13 @@ void World::updateSelection(glm::vec3 camPos, glm::vec3 lookAt)
 				BlockPtr block = getBlock(pos);
 				if(!(block->isEmpty() || block->isHidden()))
 				{
-					std::vector<float> dist{ 
+					std::vector<float> dist{
 						faceDistance(camPos, lookAt, pos + glm::vec3(0.0, 0.0, 0.5), glm::vec3(0.0, 0.0, 1.0)),
 						faceDistance(camPos, lookAt, pos - glm::vec3(0.0, 0.0, 0.5), glm::vec3(0.0, 0.0,-1.0)),
 						faceDistance(camPos, lookAt, pos + glm::vec3(0.0, 0.5, 0.0), glm::vec3(0.0, 1.0, 0.0)),
 						faceDistance(camPos, lookAt, pos - glm::vec3(0.0, 0.5, 0.0), glm::vec3(0.0,-1.0, 0.0)),
 						faceDistance(camPos, lookAt, pos + glm::vec3(0.5, 0.0, 0.0), glm::vec3(1.0, 0.0, 0.0)),
-						faceDistance(camPos, lookAt, pos - glm::vec3(0.5, 0.0, 0.0), glm::vec3(-1.0, 0.0, 0.0)) 
+						faceDistance(camPos, lookAt, pos - glm::vec3(0.5, 0.0, 0.0), glm::vec3(-1.0, 0.0, 0.0))
 					};
 					auto minD = std::min_element(dist.begin(), dist.end());
 
@@ -291,7 +291,7 @@ void World::genWorld()
 
 	for (int i = -chunkLimit ; i <= chunkLimit ; i++)
 		for (int j = -chunkLimit ; j <= chunkLimit ; j++)
-		{	
+		{
 			int index = chunkIndex(i, j);
 			chunkMap[index] = std::make_shared<Chunk>(chunkSize);
 			glm::ivec2 chunkPos(i, j);
@@ -349,7 +349,6 @@ void World::genWorld()
 							addTree(blockPos.x, height, blockPos.z);
 					}
 				}
-
 			}
 		}
 
@@ -363,11 +362,6 @@ void World::genWorld()
 
 		chunk->markForRegen();
 	}
-
-	// finally add some lightning to the scene
-	addLight(
-		glm::vec3(0.0, 50.0, 0.0),						      // position
-		glm::vec3(1.f, 1.f, 1.f));						      // color
 }
 
 void World::addTree(int x, int y, int z)
@@ -421,6 +415,32 @@ void World::bindLights(Shader groundShader, Shader playerShader)
 		lights[j]->bindLight(groundShader, playerShader);
 }
 
+void World::renderForShadowMap(Shader shadowMapShader, glm::vec3 camPos)
+{
+	shadowMapShader.use();
+	LightPtr light = lights[0];
+	light->setupCameraForShadowMapping(shadowMapShader, glm::vec3(0.f), 100.f, camPos);
+	light->bindShadowMap();
+
+	//int minI = std::max((int)std::round(camPos.x / chunkSize.x - renderRadius),-chunkLimit);
+	//int maxI = std::min((int)std::round(camPos.x / chunkSize.x + renderRadius), chunkLimit);
+	//int minJ = std::max((int)std::round(camPos.z / chunkSize.z - renderRadius),-chunkLimit);
+	//int maxJ = std::min((int)std::round(camPos.z / chunkSize.z + renderRadius), chunkLimit);
+
+	for (int i = -chunkLimit; i <= chunkLimit; i++)
+		for (int j = -chunkLimit; j <= chunkLimit; j++)
+		{
+			ChunkPtr chunk = chunkMap[chunkIndex(i, j)];
+			chunk->render();
+		}
+
+	if (saveShadowMapPpm)
+	{
+		light->savePpmFile();
+		saveShadowMapPpm = false;
+	}
+}
+
 void World::render(Shader groundShader, Shader skyShader, glm::vec3 camPos, glm::vec3 lookAt)
 {
 	// render skybox
@@ -429,8 +449,12 @@ void World::render(Shader groundShader, Shader skyShader, glm::vec3 camPos, glm:
 
 	// render ground
 	groundShader.use();
+	groundShader.setMat4("depthMVP", lights[0]->getDepthMVP());
+
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D_ARRAY, texArray);
+	glActiveTexture(GL_TEXTURE1);
+	glBindTexture(GL_TEXTURE_2D, lights[0]->getShadowMapTex());
 
 	std::map<float, ChunkPtr> chunkWithTransparency;
 
