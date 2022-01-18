@@ -1,9 +1,10 @@
 #include "Camera.h"
 
-Camera::Camera(glm::vec3 position, glm::vec3 front, glm::vec3 up, GLuint pointerTexture) :
+Camera::Camera(glm::vec3 position, glm::vec3 front, glm::vec3 up, GLuint fontTexture, GLuint selectionTexture) :
     camPos(position), camFront(front), camUp(up), worldUp(up), 
     availableBlocks(std::vector<std::string>(10, "None")), 
-    pointer(Text2D("X", 1, glm::vec2(0.5, 0.5), 40, pointerTexture))
+    pointer(Text2D("X", 1, glm::vec2(0.5, 0.5), 40)),
+    fontTex(fontTexture), selectionTex(selectionTexture)
 {
     updateCameraVectors();
     pointer.bindVBOs();
@@ -200,10 +201,11 @@ void Camera::render(Shader playerShader, Shader pointerShader, World world, glm:
     {
         playerShader.setMat4("viewMat", viewMat);
         playerShader.setMat4("transMat", glm::scale(glm::translate(glm::mat4(1.f), world.getSelection()), glm::vec3(1.01f)));
-        glBindTexture(GL_TEXTURE_2D, world.getTexture("selection").getTexID(0));
+        glBindTexture(GL_TEXTURE_2D, selectionTex);
         glDrawArrays(GL_TRIANGLES, 0, vertices.size());
     }
 
+    glBindTexture(GL_TEXTURE_2D, fontTex);
     pointerShader.use();
     pointer.render();
 }

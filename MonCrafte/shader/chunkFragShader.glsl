@@ -21,22 +21,22 @@ out vec4 FragColor;
 
 float shadowCalculation()
 {
-    vec3 projCoords = fPosModel * 0.5 + 0.5;
+	vec3 projCoords = fPosModel * 0.5 + 0.5;
 	float currentDepth = projCoords.z;
 
 	if(currentDepth > 1.0)
         return 0.0;
 
 	float shadow = 0.0;
-	vec2 texelSize = 0.5 / textureSize(depthMap, 0);
+	vec2 texelSize = 1.4 / textureSize(depthMap, 0);
 
 	for(int x = -2; x <= 2; ++x)
 	{
 		for(int y = -2; y <= 2; ++y)
 		{
-			float pcfDepth = texture(depthMap, projCoords.xy + vec2(x, y) * texelSize).r; 
-			shadow += currentDepth - 0.005 > pcfDepth ? 1.0 : 0.0;        
-		}    
+			float pcfDepth = texture(depthMap, projCoords.xy + vec2(x, y) * texelSize).r;
+			shadow += currentDepth - 0.005 > pcfDepth ? 1.0 : 0.0;
+		}
 	}
 	shadow /= 25.0;
 	return shadow;
@@ -50,7 +50,7 @@ void main()
 
 	float ambient  = 0.3;
 	float diffuse  = max(dot(fNor, lightDir), 0.0);
-	float shadow = shadowCalculation(); 
+	float shadow = shadowCalculation();
 	// float specular = 0.3 * pow(max(dot(viewDir, reflectDir), 0.0), 32);
 
 	vec4 light = vec4( (ambient + (1.0 - shadow)*diffuse) * lightColor, 1.0);

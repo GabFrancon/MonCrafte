@@ -8,10 +8,9 @@ class Text2D
 public:
     Text2D() {}
 
-    Text2D(const char* text, unsigned int length, glm::vec2 position, int size, GLuint texture)
+    Text2D(const char* text, unsigned int length, glm::vec2 position, int size)
     {
         glGenVertexArrays(1, &vao);
-        font = texture;
         this->length = length;
         offset = position;
         this->size = size;
@@ -138,8 +137,6 @@ public:
 
     void render()
     {
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, font);
         glBindVertexArray(vao);
         glDrawArrays(GL_TRIANGLES, 0, vertexPositions.size());
     }
@@ -170,8 +167,6 @@ private:
     GLuint vao = 0;
     GLuint posVbo = 0;
     GLuint texVbo = 0;
-    GLuint font = 0;
-
 };
 
 #endif //!TEXT2D_H

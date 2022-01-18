@@ -366,8 +366,8 @@ void World::genWorld()
 
 void World::addTree(int x, int y, int z)
 {
-	Texture leaves = biomeHelper.getTexture("leaves");
-	Texture wood = biomeHelper.getTexture("wood");
+	Texture leaves = biomeHelper.getTexture("oakleaves");
+	Texture wood = biomeHelper.getTexture("oaklog");
 
 	for (int j = y; j < y + 6; j++)
 	{

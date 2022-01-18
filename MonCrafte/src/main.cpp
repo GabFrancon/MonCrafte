@@ -33,7 +33,7 @@ float lastY = 0.f;
 bool  firstMouse = true;
 
 // textures
-GLuint arrayTexture;
+GLuint fontTexture, selectionTexture = 0, arrayTexture = 0, cubemap = 0;
 std::map<std::string, Texture> textures;
 int currentSpotInArrayTex = 0;
 
@@ -46,9 +46,9 @@ void initializeTextureArray()
     glTexImage3D(GL_TEXTURE_2D_ARRAY,
         0,
         GL_RGBA,
-        512,
-        512,
-        100,
+        128,
+        128,
+        50,
         0,
         GL_RGBA,
         GL_UNSIGNED_BYTE,
@@ -61,7 +61,7 @@ void initializeTextureArray()
     glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
 }
 
-GLuint loadTexture(const std::string& filename)
+GLuint loadTexture(const std::string& filename, bool addToArray=true)
 {
     int width, height, numComponents;
 
@@ -87,20 +87,22 @@ GLuint loadTexture(const std::string& filename)
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
     glBindTexture(GL_TEXTURE_2D, 0);
 
-    // adds the texture to the array
-    glBindTexture(GL_TEXTURE_2D_ARRAY, arrayTexture);
-    glTexSubImage3D(GL_TEXTURE_2D_ARRAY,
-        0,                      //Mipmap number
-        0, 0, currentSpotInArrayTex,   //xoffset, yoffset, zoffset
-        width, height, 1,                 //width, height, depth
-        GL_RGBA,                //format
-        GL_UNSIGNED_BYTE,       //type
-        data); //pointer to data
+    if (addToArray)
+    {
+        // adds the texture to the array
+        glBindTexture(GL_TEXTURE_2D_ARRAY, arrayTexture);
+        glTexSubImage3D(GL_TEXTURE_2D_ARRAY,
+            0,                      //Mipmap number
+            0, 0, currentSpotInArrayTex,   //xoffset, yoffset, zoffset
+            width, height, 1,                 //width, height, depth
+            GL_RGBA,                //format
+            GL_UNSIGNED_BYTE,       //type
+            data); //pointer to data
 
-    // Freeing the now useless CPU memory
-    glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
+        glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
+    }
+
     stbi_image_free(data);
-
     return texID;
 }
 
@@ -139,7 +141,7 @@ GLuint loadCubemap(std::vector<std::string> faces, bool withAlpha = false)
     return textureID;
 }
 
-FboShadowMap allocateShadowMapFbo(unsigned int width = 1024, unsigned int height = 768)
+FboShadowMap allocateShadowMapFbo(unsigned int width = 2000, unsigned int height = 2000)
 {
     FboShadowMap fbo;
     glGenFramebuffers(1, &fbo._depthMapFbo);
@@ -307,85 +309,99 @@ void initOpenGL()
 
 void loadTextures()
 {
-    Texture sandTex, dirtTex, grassTex, gravelTex, brickTex, woodplanckTex, stoneTex, woodTex, waterTex, leavesTex, fontTex, selTex;
+    // special textures first
+    fontTexture = loadTexture("texture/other/font.bmp", false);
+    selectionTexture = loadTexture("texture/other/selection.png", false);
 
-    GLuint sand(loadTexture("texture/512x512/sand.bmp"));
+    // then skybox cubemap
+    std::vector<std::string> faces = {
+        "texture/skybox/default/right.bmp",
+        "texture/skybox/default/left.bmp",
+        "texture/skybox/default/top.bmp",
+        "texture/skybox/default/bottom.bmp",
+        "texture/skybox/default/front.bmp",
+        "texture/skybox/default/back.bmp" };
+    cubemap = loadCubemap(faces);
+
+    // finally blocks arrayTexture
+    Texture sandTex, grassTex, snowTex, dirtTex, gravelTex, bricksTex, oakplanksTex, stoneTex, oaklogTex, waterTex, oakleavesTex;
+
+    GLuint sand(loadTexture("texture/block/sand.png"));
     sandTex.addSample(sand, currentSpotInArrayTex++);
 
-    GLuint sideGrass(loadTexture("texture/512x512/grass_side.bmp"));
+    GLuint sideGrass(loadTexture("texture/block/grass_block_side.png"));
     grassTex.addSample(sideGrass, currentSpotInArrayTex++);
 
-    GLuint topGrass(loadTexture("texture/512x512/grass_top.bmp"));
+    GLuint topGrass(loadTexture("texture/block/grass_block_top.png"));
     grassTex.addSample(topGrass, currentSpotInArrayTex++);
 
-    GLuint dirt(loadTexture("texture/512x512/dirt.bmp"));
+    GLuint sideSnow(loadTexture("texture/block/grass_block_snow.png"));
+    snowTex.addSample(sideSnow, currentSpotInArrayTex++);
+
+    GLuint topSnow(loadTexture("texture/block/powder_snow.png"));
+    snowTex.addSample(topSnow, currentSpotInArrayTex++);
+
+    GLuint dirt(loadTexture("texture/block/dirt.png"));
     grassTex.addSample(dirt, currentSpotInArrayTex);
+    snowTex.addSample(dirt, currentSpotInArrayTex);
     dirtTex.addSample(dirt, currentSpotInArrayTex++);
 
-    GLuint gravel(loadTexture("texture/512x512/gravel.bmp"));
+    GLuint gravel(loadTexture("texture/block/gravel.png"));
     gravelTex.addSample(gravel, currentSpotInArrayTex++);
 
-    GLuint brick(loadTexture("texture/512x512/brick.bmp"));
-    brickTex.addSample(brick, currentSpotInArrayTex++);
+    GLuint bricks(loadTexture("texture/block/bricks.png"));
+    bricksTex.addSample(bricks, currentSpotInArrayTex++);
 
-    GLuint woodplanck(loadTexture("texture/512x512/woodplanck.bmp"));
-    woodplanckTex.addSample(woodplanck, currentSpotInArrayTex++);
+    GLuint oakplanks(loadTexture("texture/block/oak_plancks.png"));
+    oakplanksTex.addSample(oakplanks, currentSpotInArrayTex++);
 
-    GLuint stone(loadTexture("texture/512x512/stone.bmp"));
+    GLuint stone(loadTexture("texture/block/stone.png"));
     stoneTex.addSample(stone, currentSpotInArrayTex++);
 
-    GLuint sideWood(loadTexture("texture/512x512/wood_side.bmp"));
-    woodTex.addSample(sideWood, currentSpotInArrayTex++);
+    GLuint oaklogSide(loadTexture("texture/block/oak_log.png"));
+    oaklogTex.addSample(oaklogSide, currentSpotInArrayTex++);
 
-    GLuint topWood(loadTexture("texture/512x512/wood_top.bmp"));
-    woodTex.addSample(topWood, currentSpotInArrayTex);
-    woodTex.addSample(topWood, currentSpotInArrayTex++);
+    GLuint oaklogTop(loadTexture("texture/block/oak_log_top.png"));
+    oaklogTex.addSample(oaklogTop, currentSpotInArrayTex);
+    oaklogTex.addSample(oaklogTop, currentSpotInArrayTex++);
 
-    GLuint water(loadTexture("texture/512x512/water.bmp"));
+    GLuint water(loadTexture("texture/block/water.png"));
     waterTex.addSample(water, currentSpotInArrayTex++);
 
-    GLuint leaves(loadTexture("texture/512x512/leaves.bmp"));
-    leavesTex.addSample(leaves, currentSpotInArrayTex++);
-
-    GLuint font(loadTexture("texture/512x512/font.bmp"));
-    fontTex.addSample(font, currentSpotInArrayTex++);
-
-    GLuint selection(loadTexture("texture/512x512/selection.png"));
-    selTex.addSample(selection, currentSpotInArrayTex++);
+    GLuint oakleaves(loadTexture("texture/block/oak_leaves.png"));
+    oakleavesTex.addSample(oakleaves, currentSpotInArrayTex++);
 
     sandTex.setType(Type::SOLID);
-    dirtTex.setType(Type::SOLID);
     grassTex.setType(Type::SOLID);
+    snowTex.setType(Type::SOLID);
+    dirtTex.setType(Type::SOLID);
     gravelTex.setType(Type::SOLID);
-    brickTex.setType(Type::SOLID);
-    woodplanckTex.setType(Type::SOLID);
+    bricksTex.setType(Type::SOLID);
+    oakplanksTex.setType(Type::SOLID);
     stoneTex.setType(Type::SOLID);
-    woodTex.setType(Type::SOLID);
+    oaklogTex.setType(Type::SOLID);
     waterTex.setType(Type::TRANSPARENT);
-    leavesTex.setType(Type::TRANSPARENT);
-    fontTex.setType(Type::TRANSPARENT);
-    selTex.setType(Type::TRANSPARENT);
+    oakleavesTex.setType(Type::TRANSPARENT);
 
-    textures["sand"]       = sandTex;
-    textures["dirt"]       = dirtTex;
-    textures["grass"]      = grassTex;
-    textures["gravel"]     = gravelTex;
-    textures["brick"]      = brickTex;
-    textures["woodplanck"] = woodplanckTex;
-    textures["stone"]      = stoneTex;
-    textures["wood"]       = woodTex;
-    textures["water"]      = waterTex;
-    textures["leaves"]     = leavesTex;
-    textures["font"]       = fontTex;
-    textures["selection"]  = selTex;
+    textures["sand"]      = sandTex;
+    textures["grass"]     = grassTex;
+    textures["snow"]      = snowTex;
+    textures["dirt"]      = dirtTex;
+    textures["gravel"]    = gravelTex;
+    textures["bricks"]    = bricksTex;
+    textures["oakplanks"] = oakplanksTex;
+    textures["stone"]     = stoneTex;
+    textures["oaklog"]    = oaklogTex;
+    textures["water"]     = waterTex;
+    textures["oakleaves"] = oakleavesTex;
 }
 
 void setupShaders()
 {
-    worldShader   = Shader("shader/chunkVertexShader.glsl", "shader/chunkFragShader.glsl");
-    playerShader  = Shader("shader/playerVertexShader.glsl", "shader/playerFragShader.glsl");
-    pointerShader = Shader("shader/textVertexShader.glsl", "shader/textFragShader.glsl");
-    skyShader     = Shader("shader/skyboxVertexShader.glsl", "shader/skyboxFragShader.glsl");
+    worldShader     = Shader("shader/chunkVertexShader.glsl", "shader/chunkFragShader.glsl");
+    playerShader    = Shader("shader/playerVertexShader.glsl", "shader/playerFragShader.glsl");
+    pointerShader   = Shader("shader/textVertexShader.glsl", "shader/textFragShader.glsl");
+    skyShader       = Shader("shader/skyboxVertexShader.glsl", "shader/skyboxFragShader.glsl");
     shadowMapShader = Shader("shader/shadowMapVertexShader.glsl", "shader/shadowMapFragShader.glsl");
 
     pointerShader.use();
@@ -408,16 +424,15 @@ void setupShaders()
 
 void update()
 {
+    //update cam attributes
     camera.updateCamPos(window, currentFrame - lastFrame, world);
+    camera.bindView(worldShader, skyShader);
+
+    //update world atributes
     world.updateSelection(camera.getPosition(), camera.getViewDirection());
-    
-    float lightX = 100.f * glm::cos(2 * M_PI * currentFrame / 30);
-    float lightY = 75.f * std::abs(glm::sin(2 * M_PI * currentFrame / 30));
-    float lightZ = 100.f * glm::cos(2 * M_PI * currentFrame / 30);
+    world.bindLights(worldShader, playerShader);
 
-    light->setPosition(glm::vec3(lightX, lightY, lightZ));
-
-    // Measure speed
+    // display FPS on log
     nbFrames++;
     if ((double)currentFrame - lastTime >= 1.0)
     {
@@ -429,16 +444,11 @@ void update()
 
 void render()
 {
-    camera.bindView(worldShader, skyShader);
-    world.bindLights(worldShader, playerShader);
-
     // render world
     world.renderForShadowMap(shadowMapShader,camera.getPosition());
-
     glBindFramebuffer(GL_FRAMEBUFFER, 0);
     glViewport(0, 0, windowSize.x, windowSize.y);
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
     world.render(worldShader, skyShader, camera.getPosition(), camera.getViewDirection());
 
     // render camera
@@ -462,45 +472,35 @@ int main()
     initializeTextureArray();
     loadTextures();
 
-    std::vector<std::string> faces = {
-    "texture/skybox/default/right.bmp",
-    "texture/skybox/default/left.bmp",
-    "texture/skybox/default/top.bmp",
-    "texture/skybox/default/bottom.bmp",
-    "texture/skybox/default/front.bmp",
-    "texture/skybox/default/back.bmp" };
-
-    FboShadowMap fbo = allocateShadowMapFbo(2000, 2000);
-
     // setup the world (ground + light)
     light = std::make_shared<Light>(
-        glm::vec3(100.0, 75.0,100.0),					      // position
-        glm::vec3(1.f, 1.f, 1.f), 						      // color
-        fbo);                                                 // frame buffer
+        glm::vec3(100.0, 75.0, 100.0),	   // position
+        glm::vec3(1.f, 1.f, 1.f), 	       // color
+        allocateShadowMapFbo());           // frame buffer
 
-    world = World(textures, arrayTexture, loadCubemap(faces));
+    world = World(textures, arrayTexture, cubemap);
     world.genWorld();
     world.addLight(light);
 
-    // setup the camera (player + pointer)
+    // setup the camera (player + UI)
     camera = Camera(
-        glm::vec3(0.0, 25.0, 0.0),  // position
-        glm::vec3(0.0, 0.0, -1.0), // front vector
-        glm::vec3(0.0, 1.0, 0.0),  // up vector
-        textures["font"].getTexID(0));
+        glm::vec3(0.0, 25.0, 0.0),     // position
+        glm::vec3(0.0, 0.0, -1.0),     // front vector
+        glm::vec3(0.0, 1.0, 0.0),      // up vector
+        fontTexture, selectionTexture);
 
     camera.insertBlock("sand", 0);
     camera.insertBlock("dirt", 1);
     camera.insertBlock("gravel", 2);
-    camera.insertBlock("woodplanck", 3);
-    camera.insertBlock("brick", 4);
+    camera.insertBlock("oakplanks", 3);
+    camera.insertBlock("bricks", 4);
     camera.insertBlock("water", 5);
-    camera.insertBlock("leaves", 6);
+    camera.insertBlock("oakleaves", 6);
     camera.insertBlock("stone", 7);
-    camera.insertBlock("wood", 8);
+    camera.insertBlock("oaklog", 8);
     camera.insertBlock("grass", 9);
 
-    // finally send all the data to the shaders
+    // finally setup the shaders
     setupShaders();
 
     while (!glfwWindowShouldClose(window))

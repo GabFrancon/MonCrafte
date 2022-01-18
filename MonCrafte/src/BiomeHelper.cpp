@@ -7,15 +7,15 @@ BiomeHelper::BiomeHelper(std::map<std::string, Texture> textures, int worldSize,
 	this->biomeLimit = (int)std::floor(this->worldSize / 2);
 	this->textures = textures;
 	biomeMap = std::vector<Biome>(this->worldSize * this->worldSize, Biome(BiomeType::PLAIN));
-	biomeMap[biomeIndex(-1, -1)] = Biome(BiomeType::FOREST);
-	biomeMap[biomeIndex(0, -1)] = Biome(BiomeType::FOREST);
-	biomeMap[biomeIndex(1, -1)] = Biome(BiomeType::DESERT);
+	biomeMap[biomeIndex(-1,-1)] = Biome(BiomeType::FOREST);
+	biomeMap[biomeIndex( 0,-1)] = Biome(BiomeType::FOREST);
+	biomeMap[biomeIndex( 1,-1)] = Biome(BiomeType::DESERT);
 	biomeMap[biomeIndex(-1, 0)] = Biome(BiomeType::VALLEY);
-	biomeMap[biomeIndex(0, 0)] = Biome(BiomeType::PLAIN);
-	biomeMap[biomeIndex(1, 0)] = Biome(BiomeType::DESERT);
+	biomeMap[biomeIndex( 0, 0)] = Biome(BiomeType::PLAIN);
+	biomeMap[biomeIndex( 1, 0)] = Biome(BiomeType::DESERT);
 	biomeMap[biomeIndex(-1, 1)] = Biome(BiomeType::VALLEY);
-	biomeMap[biomeIndex(0, 1)] = Biome(BiomeType::HILL);
-	biomeMap[biomeIndex(1, 1)] = Biome(BiomeType::OCEAN);
+	biomeMap[biomeIndex( 0, 1)] = Biome(BiomeType::HILL);
+	biomeMap[biomeIndex( 1, 1)] = Biome(BiomeType::OCEAN);
 
 	/*for(int i = 0 ; i < biomeMap.size() ; i++)
 		biomeMap[i] = Biome(static_cast<BiomeType>(std::rand() % 5));*/
@@ -57,15 +57,15 @@ BlockPtr BiomeHelper::genElement(glm::vec3 position, glm::ivec2 chunkPos)
 
 std::vector<float> BiomeHelper::interpolateHeight(int x, int z, glm::ivec2 chunkPos)
 {
-	Biome biome = getRelatedBiome(chunkPos);
-	Biome leftBiome = getRelatedBiome(chunkPos + glm::ivec2(-1, 0));
-	Biome rightBiome = getRelatedBiome(chunkPos + glm::ivec2(1, 0));
-	Biome backBiome = getRelatedBiome(chunkPos + glm::ivec2(0, -1));
-	Biome frontBiome = getRelatedBiome(chunkPos + glm::ivec2(0, 1));
-	Biome topLeftBiome = getRelatedBiome(chunkPos + glm::ivec2(-1, 1));
-	Biome topRightBiome = getRelatedBiome(chunkPos + glm::ivec2(1, 1));
-	Biome bottomLeftBiome = getRelatedBiome(chunkPos + glm::ivec2(-1, -1));
-	Biome bottomRightBiome = getRelatedBiome(chunkPos + glm::ivec2(1, -1));
+	Biome biome		       = getRelatedBiome(chunkPos);
+	Biome leftBiome        = getRelatedBiome(chunkPos + glm::ivec2(-1, 0));
+	Biome rightBiome       = getRelatedBiome(chunkPos + glm::ivec2( 1, 0));
+	Biome backBiome        = getRelatedBiome(chunkPos + glm::ivec2( 0,-1));
+	Biome frontBiome       = getRelatedBiome(chunkPos + glm::ivec2( 0, 1));
+	Biome topLeftBiome     = getRelatedBiome(chunkPos + glm::ivec2(-1, 1));
+	Biome topRightBiome    = getRelatedBiome(chunkPos + glm::ivec2( 1, 1));
+	Biome bottomLeftBiome  = getRelatedBiome(chunkPos + glm::ivec2(-1,-1));
+	Biome bottomRightBiome = getRelatedBiome(chunkPos + glm::ivec2( 1,-1));
 
 	float deltaX = (x - chunkSize * chunkPos.x + std::floor((float)chunkSize / 2)) / chunkSize;
 	float deltaZ = (z - chunkSize * chunkPos.y + std::floor((float)chunkSize / 2)) / chunkSize;

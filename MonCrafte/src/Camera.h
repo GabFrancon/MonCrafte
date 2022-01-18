@@ -8,7 +8,7 @@ class Camera
 {
 public:
     Camera() {};
-    Camera(glm::vec3 position, glm::vec3 front, glm::vec3 up, GLuint pointerTexture);
+    Camera(glm::vec3 position, glm::vec3 front, glm::vec3 up, GLuint fontTexture, GLuint selectionTexture);
 
     glm::vec3 getPosition() const;
     glm::vec3 getViewDirection() const;
@@ -61,6 +61,8 @@ private:
     std::vector<float> vertices;
     std::vector<float> normals;
     std::vector<float> uvs;
+
+    GLuint selectionTex = 0, fontTex = 0;
 };
 
 #endif // !CAMERA_H
