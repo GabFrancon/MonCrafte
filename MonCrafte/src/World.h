@@ -5,7 +5,6 @@
 #include "Light.h"
 #include "Skybox.h"
 #include "BiomeHelper.h"
-#include "Shader.h"
 
 
 struct Selection {

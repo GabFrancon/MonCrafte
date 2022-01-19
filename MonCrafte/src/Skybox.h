@@ -1,6 +1,8 @@
 #ifndef SKYBOX_H
 #define SXYBOX_H
 
+#include "utils.h"
+
 class Skybox
 {
 private:

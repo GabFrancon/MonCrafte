@@ -389,7 +389,7 @@ void initOpenGL()
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
 
-void loadTextures()
+void initTextures()
 {
     worldShader     = Shader("shader/chunkVertexShader.glsl", "shader/chunkFragShader.glsl");
     playerShader    = Shader("shader/playerVertexShader.glsl", "shader/playerFragShader.glsl");
@@ -481,7 +481,7 @@ int main()
 {
     initGLFW();
     initOpenGL();
-    loadTextures();
+    initTextures();
 
     //setup the light
     light = std::make_shared<Light>(

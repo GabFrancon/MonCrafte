@@ -46,8 +46,11 @@ BlockPtr BiomeHelper::genElement(glm::vec3 position, glm::ivec2 chunkPos)
 	else if (position.y < height && height <= 0)
 		return std::make_shared<Block>(position, getTexture("gravel"));
 
-	else if (position.y < height && height > 0)
+	else if (position.y < height && height < 20)
 		return std::make_shared<Block>(position, getTexture(biome.mainTex));
+
+	else if (position.y < height && height >= 20)
+		return std::make_shared<Block>(position, getTexture("snow"));
 
 	else if (position.y <= 0)
 		return std::make_shared<Block>(position, getTexture("water"));

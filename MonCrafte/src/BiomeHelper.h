@@ -52,7 +52,6 @@ struct Biome
 			amplitude = 25;
 			offset = 16;
 			treeDensity = 2;
-			mainTex = "snow";
 			break;
 		}
 	}
