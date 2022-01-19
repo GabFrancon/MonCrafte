@@ -9,11 +9,11 @@ private:
 
     GLuint vao = 0;
     GLuint posVbo = 0;
-    GLuint cubemap = 0;
 
 public:
     Skybox() {}
-    Skybox(GLuint _cubemap) : cubemap(_cubemap)
+
+    void init()
     {
         glGenVertexArrays(1, &vao);
 
@@ -69,7 +69,7 @@ public:
         size_t vertexBufferSize = sizeof(float) * vertexPositions.size();
         glGenBuffers(1, &posVbo);
         glBindBuffer(GL_ARRAY_BUFFER, posVbo);
-        glBufferData(GL_ARRAY_BUFFER, vertexBufferSize, vertexPositions.data(), GL_DYNAMIC_READ);
+        glBufferData(GL_ARRAY_BUFFER, vertexBufferSize, vertexPositions.data(), GL_STATIC_DRAW);
         glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
         glEnableVertexAttribArray(0);
 
@@ -79,8 +79,6 @@ public:
     void render()
     {
         glDepthMask(GL_FALSE);
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_CUBE_MAP, cubemap);
         glBindVertexArray(vao);
         glDrawArrays(GL_TRIANGLES, 0, 36);
         glDepthMask(GL_TRUE);

@@ -36,15 +36,12 @@ private:
 	std::vector<LightPtr> lights;
 	bool saveShadowMapPpm = false;
 
-	// textures
-	GLuint texArray = 0;
-
 	// skybox
 	Skybox skybox;
 
 public:
 	World() {};
-	World(std::map<std::string, Texture> textureCollection, GLuint textureArray, GLuint skyTexture);
+	World(std::map<std::string, Texture> textureCollection);
 
 	Texture getTexture(std::string name) { return biomeHelper.getTexture(name); }
 
@@ -56,7 +53,7 @@ public:
 	int        chunkIndex(int i, int j);
 
 	// blocks
-	void     addBlock(std::string texName);
+	void     addBlock(Texture tex);
 	BlockPtr getBlock(glm::vec3 blockPos);
 	void     destroyBlock();
 	void     markChunkForRegen(BlockPtr block);

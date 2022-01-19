@@ -13,14 +13,20 @@ private:
 
 	FboShadowMap shadowMap;
 	glm::mat4 depthMVP;
+	GLuint shadowMapOnGPU = 0;
 
 public:
-	Light(glm::vec3 pos, glm::vec3 lightColor, FboShadowMap fbo)
-		: position(pos), color(lightColor), shadowMap(fbo) {}
+	Light(glm::vec3 pos, glm::vec3 lightColor)
+		: position(pos), color(lightColor) {}
 
 	Light() {}
 
 	void setPosition(glm::vec3 pos) { position = pos; }
+	void setShadowMapOnGPU(GLuint index) { shadowMapOnGPU = index; }
+	GLuint getShadowMapOnGPU() { return shadowMapOnGPU; }
+	void setFBO(FboShadowMap fbo) { shadowMap = fbo; }
+
+
 	bool isOn() const { return isActive; }
 	void setActivate(bool activate) { isActive = activate; }
 	unsigned int getShadowMapTex() const {return shadowMap._depthMapTexture;}

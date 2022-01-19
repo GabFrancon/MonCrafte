@@ -1,63 +1,17 @@
 #include "Camera.h"
 
-Camera::Camera(glm::vec3 position, glm::vec3 front, glm::vec3 up, GLuint fontTexture, GLuint selectionTexture) :
+Camera::Camera(glm::vec3 position, glm::vec3 front, glm::vec3 up) :
     camPos(position), camFront(front), camUp(up), worldUp(up), 
-    availableBlocks(std::vector<std::string>(10, "None")), 
-    pointer(Text2D("X", 1, glm::vec2(0.5, 0.5), 40)),
-    fontTex(fontTexture), selectionTex(selectionTexture)
+    availableBlocks(std::vector<Texture>(10, Texture())), 
+    pointer(Text2D("X", 1, glm::vec2(0.5, 0.5), 40))
 {
     updateCameraVectors();
     pointer.bindVBOs();
 
-    Texture tex;
-    tex.addSample(0, 0);
-    tex.setType(Type::SOLID);
-
-    block = std::make_shared<Block>(glm::vec3(0.f), tex);
-
-    std::vector<float> layers;
-    block->addGeometry(vertices, normals, uvs, layers);
+    block = std::make_shared<Block>(glm::vec3(0.f), Texture());
 
     // generate the VAO
     glGenVertexArrays(1, &vao);
-    glBindVertexArray(vao);
-
-    // position coordinates
-    glGenBuffers(1, &posVbo);
-    size_t vertexBufferSize = sizeof(float) * vertices.size();
-    glBindBuffer(GL_ARRAY_BUFFER, posVbo);
-    glBufferData(GL_ARRAY_BUFFER, vertexBufferSize, vertices.data(), GL_STATIC_DRAW);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(0);
-
-    // normal coordinates
-    glGenBuffers(1, &normVbo);
-    size_t normalBufferSize = sizeof(float) * normals.size();
-    glBindBuffer(GL_ARRAY_BUFFER, normVbo);
-    glBufferData(GL_ARRAY_BUFFER, normalBufferSize, normals.data(), GL_STATIC_DRAW);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(1);
-
-    // texture coordinates
-    glGenBuffers(1, &texVbo);
-    size_t textureBufferSize = sizeof(float) * uvs.size();
-    glBindBuffer(GL_ARRAY_BUFFER, texVbo);
-    glBufferData(GL_ARRAY_BUFFER, textureBufferSize, uvs.data(), GL_STATIC_DRAW); 
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), 0);
-    glEnableVertexAttribArray(2);
-
-    glBindVertexArray(0);
-}
-
-void Camera::clearBuffers()
-{
-    pointer.deleteVAO();
-    pointer.clearVBOs();
-
-    glDeleteVertexArrays(1, &vao);
-    glDeleteBuffers(1, &posVbo);
-    glDeleteBuffers(1, &normVbo);
-    glDeleteBuffers(1, &texVbo);
 }
 
 void Camera::setAspectRatio(glm::vec2 windowSize, Shader pointerShader)
@@ -77,14 +31,14 @@ glm::mat4 Camera::computeViewMatrix() const {return glm::lookAt(camPos, camPos +
 
 glm::mat4 Camera::computeProjectionMatrix() const {return glm::perspective(glm::radians(55.f), aspectRatio, near, far);}
 
-std::string Camera::getCurrentBlock() const { return availableBlocks[currentBlock]; }
+Texture Camera::getCurrentBlock() const { return availableBlocks[currentBlock]; }
 
 void Camera::removeBlock(unsigned int position) { availableBlocks.erase(availableBlocks.begin() + position); }
 
-void Camera::insertBlock(std::string texName, unsigned int position)
+void Camera::insertBlock(Texture tex, unsigned int position)
 {
     removeBlock(position);
-    availableBlocks.insert(availableBlocks.begin() + position, texName); 
+    availableBlocks.insert(availableBlocks.begin() + position, tex); 
 }
 
 void Camera::updateCamPos(GLFWwindow* window, float deltaTime, World world)
@@ -137,7 +91,9 @@ void Camera::processMouseScroll(float yoffset)
     else if (scroll > 9.5f)
         scroll -= 9.4f;
     
-    currentBlock = std::round(scroll);
+    int newBlock = std::round(scroll);
+    regenRequired = newBlock != currentBlock;
+    currentBlock = newBlock;
 }
 
 void Camera::updateCameraVectors()
@@ -150,6 +106,63 @@ void Camera::updateCameraVectors()
     worldFront = glm::normalize(glm::vec3(x, 0.0, z));
     camRight   = glm::normalize(glm::cross(camFront, worldUp));
     camUp      = glm::normalize(glm::cross(camRight, camFront));
+}
+
+void Camera::regenBlock()
+{
+    // first clear CPU data
+    vertices.clear();
+    normals.clear();
+    uvs.clear();
+    texIndices.clear();
+
+    // then regen block in hand
+    block->fillObject(availableBlocks[currentBlock]);
+    block->addGeometry(vertices, normals, uvs, texIndices);
+    
+    // finally clear buffers before bind GPU buffers again
+    clearVBOs();
+    bindVBOs();
+    regenRequired = false;
+}
+
+void Camera::bindVBOs()
+{
+    glBindVertexArray(vao);
+
+    // position coordinates
+    glGenBuffers(1, &posVbo);
+    size_t vertexBufferSize = sizeof(float) * vertices.size();
+    glBindBuffer(GL_ARRAY_BUFFER, posVbo);
+    glBufferData(GL_ARRAY_BUFFER, vertexBufferSize, vertices.data(), GL_STATIC_DRAW);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(0);
+
+    // normal coordinates
+    glGenBuffers(1, &normVbo);
+    size_t normalBufferSize = sizeof(float) * normals.size();
+    glBindBuffer(GL_ARRAY_BUFFER, normVbo);
+    glBufferData(GL_ARRAY_BUFFER, normalBufferSize, normals.data(), GL_STATIC_DRAW);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(1);
+
+    // texture coordinates
+    glGenBuffers(1, &texVbo);
+    size_t textureBufferSize = sizeof(float) * uvs.size();
+    glBindBuffer(GL_ARRAY_BUFFER, texVbo);
+    glBufferData(GL_ARRAY_BUFFER, textureBufferSize, uvs.data(), GL_STATIC_DRAW);
+    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 2 * sizeof(float), 0);
+    glEnableVertexAttribArray(2);
+
+    // tex indices
+    size_t layerBufferSize = sizeof(float) * texIndices.size();
+    glGenBuffers(1, &indVbo);
+    glBindBuffer(GL_ARRAY_BUFFER, indVbo);
+    glBufferData(GL_ARRAY_BUFFER, layerBufferSize, texIndices.data(), GL_DYNAMIC_DRAW);
+    glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, sizeof(float), 0);
+    glEnableVertexAttribArray(3);
+
+    glBindVertexArray(0);
 }
 
 void Camera::bindView(Shader worldShader, Shader skyShader)
@@ -180,7 +193,9 @@ void Camera::bindProjection(Shader worldShader, Shader playerShader, Shader skyS
 
 void Camera::render(Shader playerShader, Shader pointerShader, World world, glm::vec2 windowSize)
 {   
-    glActiveTexture(GL_TEXTURE0);
+    if (regenRequired)
+        regenBlock();
+
     glm::mat4 viewMat = computeViewMatrix();
 
     playerShader.use();
@@ -188,24 +203,37 @@ void Camera::render(Shader playerShader, Shader pointerShader, World world, glm:
     glBindVertexArray(vao);
   
     // render the block in the hand of the player
-    if (availableBlocks[currentBlock] != "None")
+    if (availableBlocks[currentBlock].getType() != Type::AIR)
     {
+        playerShader.setBool("useArray", true);
         playerShader.setMat4("viewMat", glm::mat4(glm::mat3(viewMat)));
         playerShader.setMat4("transMat", glm::scale(glm::translate(glm::mat4(1.f), camFront / 4 - camRight / 7 - camUp / 9), glm::vec3(0.1f)));
-        glBindTexture(GL_TEXTURE_2D, world.getTexture(availableBlocks[currentBlock]).getTexID(0));
         glDrawArrays(GL_TRIANGLES, 0, vertices.size());
     }
 
     // render the selection over the block selected by the player
     if (world.isSelection())
     {
+        playerShader.setBool("useArray", false);
         playerShader.setMat4("viewMat", viewMat);
         playerShader.setMat4("transMat", glm::scale(glm::translate(glm::mat4(1.f), world.getSelection()), glm::vec3(1.01f)));
-        glBindTexture(GL_TEXTURE_2D, selectionTex);
         glDrawArrays(GL_TRIANGLES, 0, vertices.size());
     }
-
-    glBindTexture(GL_TEXTURE_2D, fontTex);
     pointerShader.use();
     pointer.render();
+}
+
+void Camera::deleteVAO()
+{
+    glDeleteVertexArrays(1, &vao);
+    pointer.deleteVAO();
+    pointer.clearVBOs();
+}
+
+void Camera::clearVBOs()
+{
+    glDeleteBuffers(1, &posVbo);
+    glDeleteBuffers(1, &normVbo);
+    glDeleteBuffers(1, &texVbo);
+    glDeleteBuffers(1, &indVbo);
 }

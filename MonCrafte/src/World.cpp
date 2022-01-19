@@ -1,8 +1,6 @@
 #include "World.h"
 
-World::World(std::map<std::string, Texture> textureCollection, GLuint textureArray, GLuint skyTexture) :
-	texArray(textureArray),
-	skybox(Skybox(skyTexture)),
+World::World(std::map<std::string, Texture> textureCollection) :
 	biomeHelper(BiomeHelper(textureCollection, worldSize))
 {
 	xLimit     = std::floor(chunkSize.x * worldSize / 2);
@@ -11,6 +9,7 @@ World::World(std::map<std::string, Texture> textureCollection, GLuint textureArr
 	chunkLimit = std::floor(worldSize / 2);
 
 	chunkMap = std::vector<ChunkPtr>(worldSize * worldSize, nullptr);
+	skybox.init();
 	skybox.bindVBOs();
 }
 
@@ -59,9 +58,9 @@ BlockPtr World::getBlock(glm::vec3 blockPos)
 }
 
 
-void World::addBlock(std::string texName)
+void World::addBlock(Texture tex)
 {
-	if (texName != "None" && selection.isSelection && selection.distance > 1.5f)
+	if (tex.getType() != Type::AIR && selection.isSelection && selection.distance > 1.5f)
 	{
 		glm::vec3  position = selection.object->getPosition();
 		switch (selection.faceID)
@@ -77,7 +76,7 @@ void World::addBlock(std::string texName)
 		if (isInWorld(position))
 		{
 			BlockPtr newBlock = getBlock(position);
-			newBlock->fillObject(biomeHelper.getTexture(texName));
+			newBlock->fillObject(tex);
 			hideNeighboursFace(newBlock);
 		}
 	}
@@ -450,11 +449,7 @@ void World::render(Shader groundShader, Shader skyShader, glm::vec3 camPos, glm:
 	// render ground
 	groundShader.use();
 	groundShader.setMat4("depthMVP", lights[0]->getDepthMVP());
-
-	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D_ARRAY, texArray);
-	glActiveTexture(GL_TEXTURE1);
-	glBindTexture(GL_TEXTURE_2D, lights[0]->getShadowMapTex());
+	groundShader.setInt("depthMap", lights[0]->getShadowMapOnGPU());
 
 	std::map<float, ChunkPtr> chunkWithTransparency;
 

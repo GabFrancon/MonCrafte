@@ -9,24 +9,17 @@ class Texture
 private:
 	Type type = Type::AIR;
 	std::vector<int> positionsInArray;
-	std::vector<GLuint> texID;
 
 public:
-	Texture() : texID(std::vector<GLuint>(0, 0)), positionsInArray(std::vector<int>(0, -1)) {}
+	Texture(Type blockType) : type(blockType), positionsInArray(std::vector<int>(0, -1)) {}
+
+	Texture() : positionsInArray(std::vector<int>(0, -1)) {}
 	
 	void setType(Type type) { this->type = type; }
 
-	void addSample(GLuint texture, int posInArray)
+	void addSample(int posInArray)
 	{
-		texID.push_back(texture); 
 		positionsInArray.push_back(posInArray);
-	}
-
-	GLuint getTexID(int index)
-	{
-		if (index < texID.size())
-			return texID[index];
-		return texID[0];
 	}
 
 	int getLocationInArray(int index)

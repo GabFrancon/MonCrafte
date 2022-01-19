@@ -8,7 +8,7 @@ class Camera
 {
 public:
     Camera() {};
-    Camera(glm::vec3 position, glm::vec3 front, glm::vec3 up, GLuint fontTexture, GLuint selectionTexture);
+    Camera(glm::vec3 position, glm::vec3 front, glm::vec3 up);
 
     glm::vec3 getPosition() const;
     glm::vec3 getViewDirection() const;
@@ -21,13 +21,16 @@ public:
     void processMouseScroll(float yoffset);
     void updateCameraVectors();
 
+    void regenBlock();
+    void bindVBOs();
     void bindView(Shader worldShader, Shader skyShader);
     void bindProjection(Shader worldShader, Shader playerShader, Shader skyShader);
     void render(Shader playerShader, Shader pointerShader, World world, glm::vec2 windowSize);
-    void insertBlock(std::string texName, unsigned int position);
+    void insertBlock(Texture tex, unsigned int position);
     void removeBlock(unsigned int position);
-    std::string getCurrentBlock() const;
-    void clearBuffers();
+    Texture getCurrentBlock() const;
+    void deleteVAO();
+    void clearVBOs();
 
 private:
     glm::vec3 camPos;
@@ -48,7 +51,8 @@ private:
     float pitch = 0.f;                   // pitch euler angle
 
     int currentBlock = 0;
-    std::vector<std::string> availableBlocks;
+    std::vector<Texture> availableBlocks;
+    bool regenRequired = true;
 
     Text2D pointer;
     BlockPtr block;
@@ -57,12 +61,12 @@ private:
     GLuint posVbo = 0;
     GLuint normVbo = 0;
     GLuint texVbo = 0;
+    GLuint indVbo = 0;
 
     std::vector<float> vertices;
     std::vector<float> normals;
     std::vector<float> uvs;
-
-    GLuint selectionTex = 0, fontTex = 0;
+    std::vector<float> texIndices;
 };
 
 #endif // !CAMERA_H
