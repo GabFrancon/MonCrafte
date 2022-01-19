@@ -94,7 +94,7 @@ GLuint loadTexture(const std::string& filename)
     return texID;
 }
 
-GLuint buildTextureArray()
+GLuint initTexArray()
 {
     GLuint arrayTexID = 0;
 
@@ -118,6 +118,14 @@ GLuint buildTextureArray()
     glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
     glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
     glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
+
+    return arrayTexID;
+}
+
+GLuint buildTextureArrays()
+{
+    currentSpotInArrayTex = 0;
+    GLuint arrayTexID = initTexArray();
 
     Texture sandTex(Type::SOLID);
     sandTex.addSample(currentSpotInArrayTex);
@@ -184,6 +192,29 @@ GLuint buildTextureArray()
     textures["oaklog"] = oaklogTex;
     textures["water"] = waterTex;
     textures["oakleaves"] = oakleavesTex;
+}
+
+GLuint buildNormalTextureArrays()
+{
+    currentSpotInArrayTex = 0;
+    GLuint arrayTexID = initTexArray();
+
+    addToArray(arrayTexID, "texture/block/sand_n.png");
+    addToArray(arrayTexID, "texture/block/grass_block_side_n.png");
+    addToArray(arrayTexID, "texture/block/grass_block_top_n.png");
+    addToArray(arrayTexID, "texture/block/grass_block_snow_n.png");
+    addToArray(arrayTexID, "texture/block/powder_snow_n.png");
+    addToArray(arrayTexID, "texture/block/dirt_n.png");
+    addToArray(arrayTexID, "texture/block/gravel_n.png");
+    addToArray(arrayTexID, "texture/block/bricks_n.png");
+    addToArray(arrayTexID, "texture/block/oak_planks_n.png");
+    addToArray(arrayTexID, "texture/block/stone_n.png");
+    addToArray(arrayTexID, "texture/block/oak_log_n.png");
+    addToArray(arrayTexID, "texture/block/oak_log_top_n.png");
+    addToArray(arrayTexID, "texture/block/water_n.png");
+    addToArray(arrayTexID, "texture/block/oak_leaves_n.png");
+
+    return arrayTexID;
 }
 
 GLuint loadCubemap(std::vector<std::string> faces, bool withAlpha = false)
@@ -391,20 +422,27 @@ void initOpenGL()
 
 void initTextures()
 {
-    worldShader     = Shader("shader/chunkVertexShader.glsl", "shader/chunkFragShader.glsl");
-    playerShader    = Shader("shader/playerVertexShader.glsl", "shader/playerFragShader.glsl");
-    pointerShader   = Shader("shader/textVertexShader.glsl", "shader/textFragShader.glsl");
-    skyShader       = Shader("shader/skyboxVertexShader.glsl", "shader/skyboxFragShader.glsl");
+    worldShader     = Shader("shader/chunkVertexShader.glsl",    "shader/chunkFragShader.glsl");
+    playerShader    = Shader("shader/playerVertexShader.glsl",    "shader/playerFragShader.glsl");
+    pointerShader   = Shader("shader/textVertexShader.glsl",      "shader/textFragShader.glsl");
+    skyShader       = Shader("shader/skyboxVertexShader.glsl",    "shader/skyboxFragShader.glsl");
     shadowMapShader = Shader("shader/shadowMapVertexShader.glsl", "shader/shadowMapFragShader.glsl");
 
     //bind block texture array
-    GLuint arrayTex = buildTextureArray();
+    GLuint arrayTex = buildTextureArrays();
     glBindTexture(GL_TEXTURE_2D_ARRAY, arrayTex);
     worldShader.use();
     worldShader.setInt("material.textureArray", availableTextureSlot);
     playerShader.use();
     playerShader.setInt("material.textureArray", availableTextureSlot);
     availableTextureSlot++;
+
+    //bind normal map array
+    /*GLuint normalTex = buildNormalTextureArrays();
+    glBindTexture(GL_TEXTURE_2D_ARRAY, normalTex);
+    worldShader.use();
+    worldShader.setInt("material.normalMap", availableTextureSlot);
+    availableTextureSlot++;*/
 
     // bind font texture
     GLuint fontTexture = loadTexture("texture/other/font.bmp");
@@ -471,7 +509,6 @@ void clear()
 {
     world.clearBuffers();
     camera.deleteVAO();
-
     glDeleteProgram(program);
     glfwDestroyWindow(window);
     glfwTerminate();

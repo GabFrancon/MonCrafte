@@ -1,9 +1,9 @@
 #version 330 core
 
-
 struct Material
 {
 	sampler2DArray textureArray;
+	//sampler2DArray normalMap;
 };
 uniform Material material;
 uniform vec3 camPos;
@@ -44,16 +44,21 @@ float shadowCalculation()
 
 void main()
 {
+	//vec3 normal = texture(material.normalMap, vec3(fTex, layer)).rgb;
+	//normal = normalize(normal * 2.0 - 1.0);
+	vec3 normal = normalize(fNor);
+
 	vec3 lightDir = normalize(lightPos - fPos);
-	// vec3 viewDir = normalize(camPos - fPos);
-	// vec3 reflectDir = reflect(-lightDir, fNor);
+	vec3 viewDir = normalize(camPos - fPos);
+	vec3 halfwayDir = normalize(lightDir + viewDir);
 
 	float ambient  = 0.3;
-	float diffuse  = max(dot(fNor, lightDir), 0.0);
+	float diffuse  = max(dot(normal, lightDir), 0.0);
+	float specular = 0.4 * pow(max(dot(normal, halfwayDir), 0.0), 32);
 	float shadow = shadowCalculation();
-	// float specular = 0.3 * pow(max(dot(viewDir, reflectDir), 0.0), 32);
 
-	vec4 light = vec4( (ambient + (1.0 - shadow)*diffuse) * lightColor, 1.0);
+	vec4 light = vec4( (ambient + (1.0 - shadow)*(diffuse + specular) ) * lightColor, 1.0);
 	vec4 texture = texture(material.textureArray, vec3(fTex, layer));
+
 	FragColor = light * texture;
 }
