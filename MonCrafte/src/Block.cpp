@@ -44,8 +44,8 @@ void Block::addGeometry(
 	float yoffset = position.y;
 	float zoffset = position.z;
 
-	float sideTexLocation = (float)texture.getLocationInArray(0);
-	float topTexLocation = (float)texture.getLocationInArray(1);
+	float sideTexLocation   = (float)texture.getLocationInArray(0);
+	float topTexLocation    = (float)texture.getLocationInArray(1);
 	float bottomTexLocation = (float)texture.getLocationInArray(2);
 
 	if (isFaceVisible("right"))

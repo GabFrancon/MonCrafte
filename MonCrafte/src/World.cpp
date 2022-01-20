@@ -57,7 +57,6 @@ BlockPtr World::getBlock(glm::vec3 blockPos)
 	return chunkMap[chunkIndex(chunkPos.x, chunkPos.y)]->getBlock(toChunkCoord(blockPos, glm::ivec2(chunkPos.x, chunkPos.y)));
 }
 
-
 void World::addBlock(Texture tex)
 {
 	if (tex.getType() != Type::AIR && selection.isSelection && selection.distance > 1.5f)
@@ -97,17 +96,6 @@ void World::markChunkForRegen(BlockPtr block)
 	chunkMap[chunkIndex(chunkPos.x, chunkPos.y)]->markForRegen();
 }
 
-
-void World::addLight(LightPtr light)
-{
-	lights.push_back(light);
-}
-
-void World::destroyLight(unsigned int index)
-{
-	lights.erase(lights.begin() + index);
-}
-
 bool World::collide(glm::vec3 cam)
 {
 	if(!isInWorld(cam))
@@ -125,7 +113,7 @@ bool World::collide(glm::vec3 cam)
 			for (int z = minZ; z <= maxZ; z++)
 				if ((cam.z - 0.4 < z + 0.4) && (cam.z + 0.4 > z - 0.4))
 					for (int y = minY; y <= maxY; y++)
-						if ((cam.y - 0.4 < y + 0.4) && (cam.y + 0.4 > y - 0.4))
+						if ((cam.y - 0.8 < y + 0.4) && (cam.y + 0.8 > y - 0.4))
 						{
 							BlockPtr object = getBlock(glm::vec3(x,y,z));
 							if (object->isSolid())
@@ -169,17 +157,17 @@ float World::faceDistance(glm::vec3 camPos, glm::vec3 lookAt, glm::vec3 point, g
 	return dist;
 }
 
-void World::updateSelection(glm::vec3 camPos, glm::vec3 lookAt)
+void World::updateSelection(glm::vec3 playerPos, glm::vec3 lookAt)
 {
 	selection.isSelection = false;
 	selection.distance = 6.f;
 
-	int minX = std::max((int)std::trunc(camPos.x - 5), -xLimit);
-	int maxX = std::min((int)std::trunc(camPos.x + 5), xLimit);
-	int minY = std::max((int)std::trunc(camPos.y - 5), -yLimit);
-	int maxY = std::min((int)std::trunc(camPos.y + 5), yLimit);
-	int minZ = std::max((int)std::trunc(camPos.z - 5), -zLimit);
-	int maxZ = std::min((int)std::trunc(camPos.z + 5), zLimit);
+	int minX = std::max((int)std::trunc(playerPos.x - 5), -xLimit);
+	int maxX = std::min((int)std::trunc(playerPos.x + 5), xLimit);
+	int minY = std::max((int)std::trunc(playerPos.y - 5), -yLimit);
+	int maxY = std::min((int)std::trunc(playerPos.y + 5), yLimit);
+	int minZ = std::max((int)std::trunc(playerPos.z - 5), -zLimit);
+	int maxZ = std::min((int)std::trunc(playerPos.z + 5), zLimit);
 
 	for (int x = minX; x <= maxX; x++)
 		for (int z = minZ; z <= maxZ; z++)
@@ -190,12 +178,12 @@ void World::updateSelection(glm::vec3 camPos, glm::vec3 lookAt)
 				if(block->isSolid() && !block->isHidden())
 				{
 					std::vector<float> dist{
-						faceDistance(camPos, lookAt, pos + glm::vec3(0.0, 0.0, 0.5), glm::vec3(0.0, 0.0, 1.0)),
-						faceDistance(camPos, lookAt, pos - glm::vec3(0.0, 0.0, 0.5), glm::vec3(0.0, 0.0,-1.0)),
-						faceDistance(camPos, lookAt, pos + glm::vec3(0.0, 0.5, 0.0), glm::vec3(0.0, 1.0, 0.0)),
-						faceDistance(camPos, lookAt, pos - glm::vec3(0.0, 0.5, 0.0), glm::vec3(0.0,-1.0, 0.0)),
-						faceDistance(camPos, lookAt, pos + glm::vec3(0.5, 0.0, 0.0), glm::vec3(1.0, 0.0, 0.0)),
-						faceDistance(camPos, lookAt, pos - glm::vec3(0.5, 0.0, 0.0), glm::vec3(-1.0, 0.0, 0.0))
+						faceDistance(playerPos, lookAt, pos + glm::vec3(0.0, 0.0, 0.5), glm::vec3(0.0, 0.0, 1.0)),
+						faceDistance(playerPos, lookAt, pos - glm::vec3(0.0, 0.0, 0.5), glm::vec3(0.0, 0.0,-1.0)),
+						faceDistance(playerPos, lookAt, pos + glm::vec3(0.0, 0.5, 0.0), glm::vec3(0.0, 1.0, 0.0)),
+						faceDistance(playerPos, lookAt, pos - glm::vec3(0.0, 0.5, 0.0), glm::vec3(0.0,-1.0, 0.0)),
+						faceDistance(playerPos, lookAt, pos + glm::vec3(0.5, 0.0, 0.0), glm::vec3(1.0, 0.0, 0.0)),
+						faceDistance(playerPos, lookAt, pos - glm::vec3(0.5, 0.0, 0.0), glm::vec3(-1.0, 0.0, 0.0))
 					};
 					auto minD = std::min_element(dist.begin(), dist.end());
 
@@ -286,8 +274,7 @@ void World::showNeighboursFace(BlockPtr block)
 
 void World::genWorld()
 {
-	// first generate ground (CPU side)
-
+	// first generate ground
 	for (int i = -chunkLimit ; i <= chunkLimit ; i++)
 		for (int j = -chunkLimit ; j <= chunkLimit ; j++)
 		{
@@ -295,12 +282,6 @@ void World::genWorld()
 			chunkMap[index] = std::make_shared<Chunk>(chunkSize);
 			glm::ivec2 chunkPos(i, j);
 			Biome biome = biomeHelper.getRelatedBiome(chunkPos);
-
-			/*auto it = textures.begin();
-			do {
-				it = textures.begin();
-				std::advance(it, rand() % textures.size());
-			} while (it->second.getType() == Type::TRANSPARENT);*/
 
 			for (int x = 0; x < chunkSize.x; x++)
 				for (int z = 0; z < chunkSize.z; z++)
@@ -313,7 +294,7 @@ void World::genWorld()
 					}
 		}
 
-	// then add decorations (only trees for the moment, CPU side)
+	// then add decorations (only trees for the moment)
 	for (int i = -chunkLimit; i <= chunkLimit; i++)
 		for (int j = -chunkLimit; j <= chunkLimit; j++)
 		{
@@ -408,39 +389,17 @@ void World::addTree(int x, int y, int z)
 	}
 }
 
-void World::bindLights(Shader groundShader, Shader playerShader)
+void World::simpleRender()
 {
-	for (int j = 0; j < lights.size(); j++)
-		lights[j]->bindLight(groundShader, playerShader);
-}
-
-void World::renderForShadowMap(Shader shadowMapShader, glm::vec3 camPos)
-{
-	shadowMapShader.use();
-	LightPtr light = lights[0];
-	light->setupCameraForShadowMapping(shadowMapShader, glm::vec3(0.f), 100.f, camPos);
-	light->bindShadowMap();
-
-	//int minI = std::max((int)std::round(camPos.x / chunkSize.x - renderRadius),-chunkLimit);
-	//int maxI = std::min((int)std::round(camPos.x / chunkSize.x + renderRadius), chunkLimit);
-	//int minJ = std::max((int)std::round(camPos.z / chunkSize.z - renderRadius),-chunkLimit);
-	//int maxJ = std::min((int)std::round(camPos.z / chunkSize.z + renderRadius), chunkLimit);
-
 	for (int i = -chunkLimit; i <= chunkLimit; i++)
 		for (int j = -chunkLimit; j <= chunkLimit; j++)
 		{
 			ChunkPtr chunk = chunkMap[chunkIndex(i, j)];
 			chunk->render();
 		}
-
-	if (saveShadowMapPpm)
-	{
-		light->savePpmFile();
-		saveShadowMapPpm = false;
-	}
 }
 
-void World::render(Shader groundShader, Shader skyShader, glm::vec3 camPos, glm::vec3 lookAt)
+void World::render(Shader groundShader, Shader skyShader, glm::vec3 playerPos)
 {
 	// render skybox
 	skyShader.use();
@@ -448,15 +407,7 @@ void World::render(Shader groundShader, Shader skyShader, glm::vec3 camPos, glm:
 
 	// render ground
 	groundShader.use();
-	groundShader.setMat4("depthMVP", lights[0]->getDepthMVP());
-	groundShader.setInt("depthMap", lights[0]->getShadowMapOnGPU());
-
 	std::map<float, ChunkPtr> chunkWithTransparency;
-
-	//int minI = std::max((int)std::round(camPos.x / chunkSize.x - renderRadius),-chunkLimit);
-	//int maxI = std::min((int)std::round(camPos.x / chunkSize.x + renderRadius), chunkLimit);
-	//int minJ = std::max((int)std::round(camPos.z / chunkSize.z - renderRadius),-chunkLimit);
-	//int maxJ = std::min((int)std::round(camPos.z / chunkSize.z + renderRadius), chunkLimit);
 
 	for (int i = -chunkLimit; i <= chunkLimit; i++)
 		for (int j = -chunkLimit; j <= chunkLimit; j++)
@@ -469,7 +420,7 @@ void World::render(Shader groundShader, Shader skyShader, glm::vec3 camPos, glm:
 			if (chunk->containsTransparentBlocks())
 			{
 				// put chunks containing transparency aside and sorted from farest to nearest vertex from the camera
-				float distance = glm::length(glm::vec2(camPos.x, camPos.z) - glm::vec2(i*chunkSize.x, j*chunkSize.z));
+				float distance = glm::length(glm::vec2(playerPos.x, playerPos.z) - glm::vec2(i*chunkSize.x, j*chunkSize.z));
 				chunkWithTransparency[distance] = chunk;
 			}
 			// render solid chunk

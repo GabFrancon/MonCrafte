@@ -5,6 +5,7 @@
 
 #include "World.h"
 #include "Camera.h"
+#include "Light.h"
 
 // general
 GLFWwindow* window = nullptr;
@@ -12,7 +13,8 @@ glm::vec2 windowSize(1200, 800);
 GLuint program = 0;
 Camera camera;
 World world;
-LightPtr light;
+Player player;
+Light light;
 
 // shaders
 Shader worldShader;
@@ -104,10 +106,10 @@ GLuint initTexArray()
 
     glTexImage3D(GL_TEXTURE_2D_ARRAY,
         0,
-        GL_RGBA,
-        128,
-        128,
-        50,
+        GL_RGBA,        // format
+        128,            // width
+        128,            // height
+        50,             // depth (= nb of textures)
         0,
         GL_RGBA,
         GL_UNSIGNED_BYTE,
@@ -296,7 +298,8 @@ void windowSizeCallback(GLFWwindow* window, int width, int height)
 {
     windowSize.x = width;
     windowSize.y = height;
-    camera.setAspectRatio(windowSize, pointerShader);
+    camera.setAspectRatio(windowSize);
+    player.setPointerRatio(windowSize, pointerShader);
     camera.bindProjection(worldShader, playerShader, skyShader);
     glViewport(0, 0, (GLint)width, (GLint)height);
 }
@@ -309,9 +312,6 @@ void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods
 
     else if (action == GLFW_PRESS && key == GLFW_KEY_F)
         glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-
-    else if (action == GLFW_PRESS && key == GLFW_KEY_G)
-        world.saveShadowMap();
 
     else if (action == GLFW_PRESS && key == GLFW_KEY_ESCAPE)
         glfwSetWindowShouldClose(window, true);
@@ -331,7 +331,7 @@ void mouseCallback(GLFWwindow* window, double xpos, double ypos)
     lastX = xpos;
     lastY = ypos;
 
-    camera.processMouseMoovement(xoffset, yoffset);
+    player.processMouseMoovement(xoffset, yoffset);
 }
 
 // Executed each time a mouse button is clicked.
@@ -340,14 +340,14 @@ void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
     if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS)
         world.destroyBlock();
     else if (button == GLFW_MOUSE_BUTTON_RIGHT && action == GLFW_PRESS)
-        world.addBlock(camera.getCurrentBlock());
+        world.addBlock(player.getCurrentBlock());
 }
 
 
 // Executed each time a scroll is proceed.
 void scrollCallback(GLFWwindow* window, double xoDffset, double yoffset)
 {
-    camera.processMouseScroll(yoffset);
+    player.processMouseScroll(yoffset);
 }
 
 // Executed each time an exception is raised.
@@ -473,16 +473,75 @@ void initTextures()
     skyShader.setInt("cubemap", 0);
 }
 
+void initScene()
+{
+    //setup the light
+    light = Light(
+        glm::vec3(150.0, 100.0, 150.0),	   // position
+        glm::vec3(1.f, 1.f, 1.f)); 	       // color
+
+    light.setShadowMapOnGPU(availableTextureSlot);
+    light.setFBO(allocateShadowMapFbo());
+    availableTextureSlot++;
+
+    // setup the world
+    world = World(textures);
+    world.genWorld();
+
+    // setup the camera
+    camera = Camera();
+    camera.setAspectRatio(windowSize);
+    camera.bindProjection(worldShader, playerShader, skyShader);
+
+    // setup the player
+    player = Player(
+        glm::vec3(0.0, 25.0, 0.0),     // position
+        glm::vec3(0.0, 0.0, -1.0),     // front vector
+        glm::vec3(0.0, 1.0, 0.0));     // up vector
+
+    player.setPointerRatio(windowSize, pointerShader);
+    player.insertBlock(textures["sand"], 0);
+    player.insertBlock(textures["dirt"], 1);
+    player.insertBlock(textures["gravel"], 2);
+    player.insertBlock(textures["oakplanks"], 3);
+    player.insertBlock(textures["bricks"], 4);
+    player.insertBlock(textures["snow"], 5);
+    player.insertBlock(textures["oakleaves"], 6);
+    player.insertBlock(textures["stone"], 7);
+    player.insertBlock(textures["oaklog"], 8);
+    player.insertBlock(textures["grass"], 9);
+}
+
 void update()
 {
-    //update camera attributes
-    camera.updateCamPos(window, currentFrame - lastFrame, world);
-    camera.bindView(worldShader, skyShader);
+    // regen the shadow map
+    shadowMapShader.use();
+    light.setupCameraForShadowMapping(glm::vec3(0.f), 100.f, player.getPosition());
+    shadowMapShader.setMat4("depthMVP", light.getDepthMVP());
+    light.bindShadowMap();
+    world.simpleRender();
+    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    glViewport(0, 0, windowSize.x, windowSize.y);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    light.bindLight(worldShader, playerShader);
 
-    //update world atributes
-    world.updateSelection(camera.getPosition(), camera.getViewDirection());
+    //update player and camera position
+    player.updatePosition(window, currentFrame - lastFrame, world);
+    camera.focusCamOnPlayer(player);
+    camera.bindView(worldShader, playerShader, skyShader);
 
-    // display FPS on log
+    //update world attributes
+    world.updateSelection(camera.getPosition(), player.getFront());
+}
+
+void render()
+{
+    world.render(worldShader, skyShader, player.getPosition());
+    player.render(playerShader, pointerShader, world);
+}
+
+void printFPS()
+{
     nbFrames++;
     if ((double)currentFrame - lastTime >= 1.0)
     {
@@ -492,23 +551,10 @@ void update()
     }
 }
 
-void render()
-{
-    // render world
-    world.renderForShadowMap(shadowMapShader,camera.getPosition());
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
-    glViewport(0, 0, windowSize.x, windowSize.y);
-    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-    world.render(worldShader, skyShader, camera.getPosition(), camera.getViewDirection());
-
-    // render camera
-    camera.render(playerShader, pointerShader, world, windowSize);
-}
-
 void clear()
 {
     world.clearBuffers();
-    camera.deleteVAO();
+    player.deleteVAO();
     glDeleteProgram(program);
     glfwDestroyWindow(window);
     glfwTerminate();
@@ -519,41 +565,7 @@ int main()
     initGLFW();
     initOpenGL();
     initTextures();
-
-    //setup the light
-    light = std::make_shared<Light>(
-        glm::vec3(150.0, 50.0, 150.0),	   // position
-        glm::vec3(1.f, 1.f, 1.f)); 	       // color
-
-    light->setShadowMapOnGPU(availableTextureSlot);
-    light->setFBO(allocateShadowMapFbo());
-    availableTextureSlot++;
-
-    // setup the world
-    world = World(textures);
-    world.genWorld();
-    world.addLight(light);
-    world.bindLights(worldShader, playerShader);
-
-    // setup the camera
-    camera = Camera(
-        glm::vec3(0.0, 25.0, 0.0),     // position
-        glm::vec3(0.0, 0.0, -1.0),     // front vector
-        glm::vec3(0.0, 1.0, 0.0));     // up vector
-
-    camera.setAspectRatio(windowSize, pointerShader);
-    camera.bindProjection(worldShader, playerShader, skyShader);
-
-    camera.insertBlock(textures["sand"], 0);
-    camera.insertBlock(textures["dirt"], 1);
-    camera.insertBlock(textures["gravel"], 2);
-    camera.insertBlock(textures["oakplanks"], 3);
-    camera.insertBlock(textures["bricks"], 4);
-    camera.insertBlock(textures["snow"], 5);
-    camera.insertBlock(textures["oakleaves"], 6);
-    camera.insertBlock(textures["stone"], 7);
-    camera.insertBlock(textures["oaklog"], 8);
-    camera.insertBlock(textures["grass"], 9);
+    initScene();
 
     while (!glfwWindowShouldClose(window))
     {
@@ -562,6 +574,7 @@ int main()
         currentFrame = glfwGetTime();
         update();
         render();
+        printFPS();
 
         glfwSwapBuffers(window);
         glfwPollEvents();

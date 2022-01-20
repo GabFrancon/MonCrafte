@@ -1,11 +1,11 @@
 #ifndef WORLD_H
 #define WORLD_H
 
+#include "utils.h"
 #include "Chunk.h"
-#include "Light.h"
 #include "Skybox.h"
 #include "BiomeHelper.h"
-
+#include "Shader.h"
 
 struct Selection {
 	BlockPtr object;
@@ -17,7 +17,6 @@ struct Selection {
 class World
 {
 private:
-	// chunks
 	int worldSize = 15;								 // in terms of number of chunks
 	int renderRadius = 10;							 // in terms of number of chunks
 	glm::ivec3 chunkSize = glm::ivec3(15, 60, 15);   // in terms of number of blocks
@@ -27,15 +26,12 @@ private:
 	int zLimit     = 0;
 	int chunkLimit = 0;
 
-	std::vector<ChunkPtr> chunkMap;
+	// CPU data
 	BiomeHelper biomeHelper;
 	Selection selection;
 
-	// lights
-	std::vector<LightPtr> lights;
-	bool saveShadowMapPpm = false;
-
-	// skybox
+	// geometry
+	std::vector<ChunkPtr> chunkMap;
 	Skybox skybox;
 
 public:
@@ -60,24 +56,18 @@ public:
 	void     showNeighboursFace(BlockPtr block);
 	std::map<std::string, BlockPtr> getNeighbours(BlockPtr block);
 
-	// lights
-	void addLight(LightPtr light);
-	void destroyLight(unsigned int index);
-
 	// collision and selection
-	bool  collide(glm::vec3 cam);
-	float faceDistance(glm::vec3 camPos, glm::vec3 lookAt, glm::vec3 point, glm::vec3 normal);
-	void  updateSelection(glm::vec3 camPos, glm::vec3 lookAt);
-	bool isSelection() { return selection.isSelection; }
+	bool	  collide(glm::vec3 cam);
+	float	  faceDistance(glm::vec3 camPos, glm::vec3 lookAt, glm::vec3 point, glm::vec3 normal);
+	void	  updateSelection(glm::vec3 playerPos, glm::vec3 lookAt);
+	bool      isSelection() { return selection.isSelection; }
 	glm::vec3 getSelection() { return selection.object->getPosition(); }
 
 	// generation and rendering
 	void genWorld();
 	void addTree(int x, int y, int z);
-	void bindLights(Shader groundShader, Shader playerShader);
-	void saveShadowMap() { saveShadowMapPpm = true; }
-	void renderForShadowMap(Shader shadowMapShader, glm::vec3 camPos);
-	void render(Shader groundShader, Shader skyShader, glm::vec3 camPos, glm::vec3 lookAt);
+	void simpleRender();
+	void render(Shader groundShader, Shader skyShader, glm::vec3 playerPos);
 	void clearBuffers();
 };
 
