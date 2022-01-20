@@ -522,7 +522,7 @@ int main()
 
     //setup the light
     light = std::make_shared<Light>(
-        glm::vec3(100.0, 75.0, 100.0),	   // position
+        glm::vec3(150.0, 50.0, 150.0),	   // position
         glm::vec3(1.f, 1.f, 1.f)); 	       // color
 
     light->setShadowMapOnGPU(availableTextureSlot);

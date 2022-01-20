@@ -5,6 +5,7 @@ struct Material
 	sampler2DArray textureArray;
 	//sampler2DArray normalMap;
 };
+
 uniform Material material;
 uniform vec3 camPos;
 uniform vec3 lightPos;
@@ -27,18 +28,21 @@ float shadowCalculation()
 	if(currentDepth > 1.0)
         return 0.0;
 
-	float shadow = 0.0;
-	vec2 texelSize = 1.4 / textureSize(depthMap, 0);
+	float shadow  = 0.0;
+	float bias    = 0.005; 
+	float samples = 5.0;
+	float offset  = 0.002;
 
-	for(int x = -2; x <= 2; ++x)
+	for(float x = -offset; x < offset; x += offset / (samples * 0.5))
 	{
-		for(int y = -2; y <= 2; ++y)
+		for(float y = -offset; y < offset; y += offset / (samples * 0.5))
 		{
-			float pcfDepth = texture(depthMap, projCoords.xy + vec2(x, y) * texelSize).r;
-			shadow += currentDepth - 0.005 > pcfDepth ? 1.0 : 0.0;
+			float closestDepth = texture(depthMap, projCoords.xy + vec2(x, y)).r;
+			if(currentDepth - bias > closestDepth)
+                shadow += 1.0;
 		}
 	}
-	shadow /= 25.0;
+	shadow /= (samples * samples);
 	return shadow;
 }
 
@@ -54,7 +58,7 @@ void main()
 
 	float ambient  = 0.3;
 	float diffuse  = max(dot(normal, lightDir), 0.0);
-	float specular = 0.4 * pow(max(dot(normal, halfwayDir), 0.0), 32);
+	float specular = 0.3 * pow(max(dot(normal, halfwayDir), 0.0), 32);
 	float shadow = shadowCalculation();
 
 	vec4 light = vec4( (ambient + (1.0 - shadow)*(diffuse + specular) ) * lightColor, 1.0);

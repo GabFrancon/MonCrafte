@@ -201,7 +201,12 @@ void Camera::render(Shader playerShader, Shader pointerShader, World world, glm:
     playerShader.use();
     playerShader.setVec3("camPos", camPos);
     glBindVertexArray(vao);
-  
+    
+    playerShader.setBool("useArray", true);
+    playerShader.setMat4("viewMat", viewMat);
+    playerShader.setMat4("transMat", glm::scale(glm::translate(glm::mat4(1.f), glm::vec3(150.0, 50.0, 150.0)), glm::vec3(20.f)));
+    glDrawArrays(GL_TRIANGLES, 0, vertices.size());
+
     // render the block in the hand of the player
     if (availableBlocks[currentBlock].getType() != Type::AIR)
     {
