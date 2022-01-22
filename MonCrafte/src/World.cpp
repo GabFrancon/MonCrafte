@@ -121,6 +121,21 @@ bool World::collide(glm::vec3 cam)
 						}
 	return false;
 }
+bool World::collideOnY(glm::vec3 cam)
+{
+	int minY = std::max((int)std::trunc(cam.y - 1),-yLimit);
+	int maxY = std::min((int)std::trunc(cam.y + 1), yLimit);
+	int x = std::max((int)std::round(cam.x), -xLimit);
+	int z = std::max((int)std::round(cam.z), -zLimit);
+
+	for (int y = minY; y <= maxY; y++)
+	{
+		BlockPtr object = getBlock(glm::vec3(x, y, z));
+		if (object->isSolid())
+			return true;
+	}
+	return false;
+}
 
 float World::faceDistance(glm::vec3 camPos, glm::vec3 lookAt, glm::vec3 point, glm::vec3 normal)
 {

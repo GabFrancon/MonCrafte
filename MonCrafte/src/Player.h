@@ -18,7 +18,7 @@ public:
     Texture getCurrentBlock() const { return availableBlocks[currentBlock]; }
     void removeBlock(unsigned int position) { availableBlocks.erase(availableBlocks.begin() + position); }
 
-    void updatePosition(GLFWwindow* window, float deltaTime, World world);
+    void updatePosition(GLFWwindow* window, float deltaTime, World world, bool dynamic = false);
     void setPointerRatio(glm::vec2 windowSize, Shader pointerShader);
     void processMouseMoovement(float xoffset, float yoffset, GLboolean constrainPitch = true);
     void processMouseScroll(float yoffset);
@@ -40,9 +40,15 @@ private:
     glm::vec3 worldFront;
     glm::vec3 worldUp;
 
+    float M = 0.1f;                                 // mass
+    glm::vec3 playerVelocity = glm::vec3(0.f);      // linear velocity
+    glm::vec3 playerMomentum = glm::vec3(0.f);      // linear momentum
+    glm::vec3 gravity = glm::vec3(0, -9.8, 0);      // gravity
+    bool onJump = true;
+
     float scroll = 4.0f;
     float mouseSensitivity = 0.05f;
-    float playerVelociy = 10.f;
+    float horizontalSpeed = 10.f;
     float yaw = -90.f;                   // yaw euler angle
     float pitch = 0.f;                   // pitch euler angle
 

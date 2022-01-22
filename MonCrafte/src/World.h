@@ -58,6 +58,7 @@ public:
 
 	// collision and selection
 	bool	  collide(glm::vec3 cam);
+	bool	  collideOnY(glm::vec3 cam);
 	float	  faceDistance(glm::vec3 camPos, glm::vec3 lookAt, glm::vec3 point, glm::vec3 normal);
 	void	  updateSelection(glm::vec3 playerPos, glm::vec3 lookAt);
 	bool      isSelection() { return selection.isSelection; }

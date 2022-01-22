@@ -20,27 +20,69 @@ void Player::insertBlock(Texture tex, unsigned int position)
     availableBlocks.insert(availableBlocks.begin() + position, tex);
 }
 
-void Player::updatePosition(GLFWwindow* window, float deltaTime, World world)
+void Player::updatePosition(GLFWwindow* window, float deltaTime, World world, bool dynamic)
 {
-    float cameraSpeed = playerVelociy * deltaTime;
-    glm::vec3 newPos = playerPos;
+    glm::vec3 newPosH = playerPos;
+    glm::vec3 newPosV = playerPos;
+
+    float speed = horizontalSpeed * deltaTime;
 
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
-        newPos += worldFront * cameraSpeed;
+        newPosH += worldFront  * speed;
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)
-        newPos -= worldFront * cameraSpeed;
+        newPosH -= worldFront  * speed;
     if (glfwGetKey(window, GLFW_KEY_D) == GLFW_PRESS)
-        newPos += playerRight * cameraSpeed;
+        newPosH += playerRight * speed;
     if (glfwGetKey(window, GLFW_KEY_A) == GLFW_PRESS)
-        newPos -= playerRight * cameraSpeed;
-    if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
-        newPos += worldUp * cameraSpeed;
-    if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
-        newPos -= worldUp * cameraSpeed;
+        newPosH -= playerRight * speed;
 
-    if (newPos != playerPos)
-        if (!world.collide(newPos))
-            playerPos = newPos;
+    if (!world.collide(newPosH))
+    {
+        playerPos.x = newPosH.x;
+        playerPos.z = newPosH.z;
+    }
+
+    if (dynamic)
+    {
+        glm::vec3 force = gravity * M;
+
+        if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
+            if (!onJump)
+            {
+                force += glm::vec3(0.f, 15.f, 0.f);
+                onJump = true;
+            }
+
+        playerMomentum += deltaTime * force;
+        playerVelocity += playerMomentum / M;
+
+        // frottements
+        if (playerVelocity.y < -40)
+            playerVelocity.y = -40;
+        if (playerVelocity.y > 20)
+            playerVelocity.y = 20;
+
+        newPosV += deltaTime * playerVelocity;
+
+        if (world.collideOnY(newPosV) && newPosV.y < playerPos.y)
+        {
+            playerMomentum.y = 0;
+            playerVelocity.y = 0;
+            onJump = false;
+        }
+        else
+          playerPos.y = newPosV.y;
+    }
+    else
+    {
+        if (glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_PRESS)
+            newPosV += worldUp * speed;
+        if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
+            newPosV -= worldUp * speed;
+
+        if (!world.collideOnY(newPosV))
+            playerPos.y = newPosV.y;
+    }
 }
 
 void Player::setPointerRatio(glm::vec2 windowSize, Shader pointerShader)
@@ -162,8 +204,10 @@ void Player::render(Shader playerShader, Shader pointerShader, World world)
     if (availableBlocks[currentBlock].getType() != Type::AIR)
     {
         playerShader.setBool("useArray", true);
-        glm::mat4 transMat = glm::scale(glm::translate(glm::mat4(1.f), playerPos - playerRight / 7), glm::vec3(0.1f));
-        playerShader.setMat4("transMat", transMat);
+        glm::mat4 transfo = glm::translate(glm::mat4(1.f), playerPos - playerRight / 7);
+        transfo = glm::rotate(transfo, glm::radians(pitch), playerRight);
+        transfo = glm::scale(transfo, glm::vec3(0.1f));
+        playerShader.setMat4("transMat", transfo);
         glDrawArrays(GL_TRIANGLES, 0, vertices.size());
     }
     // render the selection over the block selected by the player
