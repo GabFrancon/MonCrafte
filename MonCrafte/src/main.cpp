@@ -1,11 +1,7 @@
-#define _USE_MATH_DEFINES
-
-#define STB_IMAGE_IMPLEMENTATION
-#include <stb/stb_image.h>
-
 #include "World.h"
 #include "Camera.h"
 #include "Light.h"
+#include "textureLoader.h"
 
 // general
 GLFWwindow* window = nullptr;
@@ -14,9 +10,9 @@ GLuint program = 0;
 
 // Scene
 Camera camera;
-World world;
+World  world;
 Player player;
-Light light;
+Light  light;
 
 // shaders
 Shader worldShader;
@@ -34,232 +30,12 @@ int nbFrames       = 0;
 // mouse
 float lastX = 0.f;
 float lastY = 0.f;
-bool  firstMouse = true;
-bool survivalMode = false;
+bool  firstMouse   = true;
+bool  survivalMode = false;
 
 // textures
 std::map<std::string, Texture> textures;
-unsigned int currentSpotInArrayTex = 0;
 unsigned int availableTextureSlot = 0;
-
-
-void addToArray(GLuint &arrayID, const std::string& filename)
-{
-    int width, height, numComponents;
-
-    // Loading the image in CPU memory using stb_image
-    unsigned char* data = stbi_load(
-        filename.c_str(),
-        &width, &height,
-        &numComponents,
-        0);
-
-    // adds the texture to the array
-    glBindTexture(GL_TEXTURE_2D_ARRAY, arrayID);
-    glTexSubImage3D(GL_TEXTURE_2D_ARRAY,
-        0,                                //Mipmap number
-        0, 0, currentSpotInArrayTex++,    //xoffset, yoffset, zoffset
-        width, height, 1,                 //width, height, depth
-        GL_RGBA,                          //format
-        GL_UNSIGNED_BYTE,                 //type
-        data);                            //pointer to data
-
-    glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
-    stbi_image_free(data);
-}
-
-GLuint loadTexture(const std::string& filename)
-{
-    int width, height, numComponents;
-
-    // Loading the image in CPU memory using stb_image
-    unsigned char* data = stbi_load(
-        filename.c_str(),
-        &width, &height,
-        &numComponents,
-        0);
-
-    GLuint texID;
-    // creates a texture and upload the image data in GPU memory
-    glGenTextures(1, &texID);
-    glActiveTexture(GL_TEXTURE0 + availableTextureSlot);
-    glBindTexture(GL_TEXTURE_2D, texID);
-
-    // setup texture filtering option and repeat model
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-
-    // fills the GPU texture with the data stored in the CPU image
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-    glBindTexture(GL_TEXTURE_2D, 0);
-
-    stbi_image_free(data);
-    return texID;
-}
-
-GLuint initTexArray()
-{
-    GLuint arrayTexID = 0;
-
-    glGenTextures(1, &arrayTexID);
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_2D_ARRAY, arrayTexID);
-
-    glTexImage3D(GL_TEXTURE_2D_ARRAY,
-        0,
-        GL_RGBA,        // format
-        128,            // width
-        128,            // height
-        100,            // depth (= nb of textures)
-        0,
-        GL_RGBA,
-        GL_UNSIGNED_BYTE,
-        NULL);
-
-    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-    glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-    glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
-
-    return arrayTexID;
-}
-
-GLuint buildTextureArrays()
-{
-    // usage : 1. side (mandatory) / 2. top (optional) / 3. bottom (optional)
-    currentSpotInArrayTex = 0;
-    GLuint arrayTexID = initTexArray();
-
-    Texture sandTex(Type::SOLID);
-    sandTex.addSample(currentSpotInArrayTex);
-    addToArray(arrayTexID, "texture/block/sand.png");
-    Texture grassTex(Type::SOLID);
-    grassTex.addSample(currentSpotInArrayTex);
-    addToArray(arrayTexID, "texture/block/grass_block_side.png");
-    grassTex.addSample(currentSpotInArrayTex);
-    addToArray(arrayTexID, "texture/block/grass_block_top.png");
-    Texture snowTex(Type::SOLID);
-    snowTex.addSample(currentSpotInArrayTex);
-    addToArray(arrayTexID, "texture/block/grass_block_snow.png");
-    snowTex.addSample(currentSpotInArrayTex);
-    addToArray(arrayTexID, "texture/block/powder_snow.png");
-    Texture dirtTex(Type::SOLID);
-    grassTex.addSample(currentSpotInArrayTex);
-    snowTex.addSample(currentSpotInArrayTex);
-    dirtTex.addSample(currentSpotInArrayTex);
-    addToArray(arrayTexID, "texture/block/dirt.png");
-    Texture gravelTex(Type::SOLID);
-    gravelTex.addSample(currentSpotInArrayTex);
-    addToArray(arrayTexID, "texture/block/gravel.png");
-    Texture bricksTex(Type::SOLID);
-    bricksTex.addSample(currentSpotInArrayTex);
-    addToArray(arrayTexID, "texture/block/bricks.png");
-    Texture oakplanksTex(Type::SOLID);
-    oakplanksTex.addSample(currentSpotInArrayTex);
-    addToArray(arrayTexID, "texture/block/oak_planks.png");
-    Texture stoneTex(Type::SOLID);
-    stoneTex.addSample(currentSpotInArrayTex);
-    addToArray(arrayTexID, "texture/block/stone.png");
-    Texture oaklogTex(Type::SOLID);
-    oaklogTex.addSample(currentSpotInArrayTex);
-    addToArray(arrayTexID, "texture/block/oak_log.png");
-    oaklogTex.addSample(currentSpotInArrayTex);
-    oaklogTex.addSample(currentSpotInArrayTex);
-    addToArray(arrayTexID, "texture/block/oak_log_top.png");
-    Texture waterTex(Type::TRANSPARENT);
-    waterTex.addSample(currentSpotInArrayTex);
-    addToArray(arrayTexID, "texture/block/water.png");
-    Texture oakleavesTex(Type::TRANSPARENT);
-    oakleavesTex.addSample(currentSpotInArrayTex);
-    addToArray(arrayTexID, "texture/block/oak_leaves.png");
-    /*Texture cobblestoneTex(Type::SOLID);
-    cobblestoneTex.addSample(currentSpotInArrayTex);
-    addToArray(arrayTexID, "texture/block/cobblestone.png");
-    Texture cactusTex(Type::SOLID);
-    cactusTex.addSample(currentSpotInArrayTex);
-    addToArray(arrayTexID, "texture/block/cactus_side.png");
-    cactusTex.addSample(currentSpotInArrayTex);
-    addToArray(arrayTexID, "texture/block/cactus_top.png");
-    cactusTex.addSample(currentSpotInArrayTex);
-    addToArray(arrayTexID, "texture/block/cactus_bottom.png");*/
-
-    textures["sand"] = sandTex;
-    textures["grass"] = grassTex;
-    textures["snow"] = snowTex;
-    textures["dirt"] = dirtTex;
-    textures["gravel"] = gravelTex;
-    textures["bricks"] = bricksTex;
-    textures["oakplanks"] = oakplanksTex;
-    textures["stone"] = stoneTex;
-    textures["oaklog"] = oaklogTex;
-    textures["water"] = waterTex;
-    textures["oakleaves"] = oakleavesTex;
-    //textures["cobblestone"] = cobblestoneTex;
-    //textures["cactus"] = cactusTex;
-}
-
-GLuint buildNormalTextureArrays()
-{
-    currentSpotInArrayTex = 0;
-    GLuint arrayTexID = initTexArray();
-
-    addToArray(arrayTexID, "texture/block/sand_n.png");
-    addToArray(arrayTexID, "texture/block/grass_block_side_n.png");
-    addToArray(arrayTexID, "texture/block/grass_block_top_n.png");
-    addToArray(arrayTexID, "texture/block/grass_block_snow_n.png");
-    addToArray(arrayTexID, "texture/block/powder_snow_n.png");
-    addToArray(arrayTexID, "texture/block/dirt_n.png");
-    addToArray(arrayTexID, "texture/block/gravel_n.png");
-    addToArray(arrayTexID, "texture/block/bricks_n.png");
-    addToArray(arrayTexID, "texture/block/oak_planks_n.png");
-    addToArray(arrayTexID, "texture/block/stone_n.png");
-    addToArray(arrayTexID, "texture/block/oak_log_n.png");
-    addToArray(arrayTexID, "texture/block/oak_log_top_n.png");
-    addToArray(arrayTexID, "texture/block/water_n.png");
-    addToArray(arrayTexID, "texture/block/oak_leaves_n.png");
-
-    return arrayTexID;
-}
-
-GLuint loadCubemap(std::vector<std::string> faces, bool withAlpha = false)
-{
-    GLuint textureID;
-    glGenTextures(1, &textureID);
-    glActiveTexture(GL_TEXTURE0);
-    glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
-
-    int width, height, nrChannels;
-    for (unsigned int i = 0; i < faces.size(); i++)
-    {
-        unsigned char* data = stbi_load(faces[i].c_str(), &width, &height, &nrChannels, 0);
-        if (data)
-        {
-            if (withAlpha)
-                glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
-                    0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-            else
-                glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i,
-                    0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data);
-            stbi_image_free(data);
-        }
-        else
-        {
-            std::cout << "Cubemap tex failed to load at path: " << faces[i] << std::endl;
-            stbi_image_free(data);
-        }
-    }
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_REPEAT);
-
-    glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
-    return textureID;
-}
 
 FboShadowMap allocateShadowMapFbo(unsigned int width = 2000, unsigned int height = 2000)
 {
@@ -351,7 +127,6 @@ void mouseButtonCallback(GLFWwindow* window, int button, int action, int mods)
         world.addBlock(player.getCurrentBlock());
 }
 
-
 // Executed each time a scroll is proceed.
 void scrollCallback(GLFWwindow* window, double xoDffset, double yoffset)
 {
@@ -428,9 +203,117 @@ void initOpenGL()
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 }
 
-void initTextures()
+GLuint buildTextureArrays()
 {
-    worldShader     = Shader("shader/chunkVertexShader.glsl",    "shader/chunkFragShader.glsl");
+    // usage : 1. side (mandatory) / 2. top (optional) / 3. bottom (optional)
+    unsigned int currentSpotInArrayTex = 0;
+    GLuint arrayTexID = initTexArray(availableTextureSlot);
+
+    Texture sandTex(Type::SOLID);
+    sandTex.addSample(currentSpotInArrayTex);
+    addToArray(arrayTexID, "texture/block/sand.png", currentSpotInArrayTex++);
+
+    Texture grassTex(Type::SOLID);
+    grassTex.addSample(currentSpotInArrayTex);
+    addToArray(arrayTexID, "texture/block/grass_block_side.png", currentSpotInArrayTex++);
+    grassTex.addSample(currentSpotInArrayTex);
+    addToArray(arrayTexID, "texture/block/grass_block_top.png", currentSpotInArrayTex++);
+
+    Texture snowTex(Type::SOLID);
+    snowTex.addSample(currentSpotInArrayTex);
+    addToArray(arrayTexID, "texture/block/grass_block_snow.png", currentSpotInArrayTex++);
+    snowTex.addSample(currentSpotInArrayTex);
+    addToArray(arrayTexID, "texture/block/powder_snow.png", currentSpotInArrayTex++);
+
+    Texture dirtTex(Type::SOLID);
+    grassTex.addSample(currentSpotInArrayTex);
+    snowTex.addSample(currentSpotInArrayTex);
+    dirtTex.addSample(currentSpotInArrayTex);
+    addToArray(arrayTexID, "texture/block/dirt.png", currentSpotInArrayTex++);
+
+    Texture gravelTex(Type::SOLID);
+    gravelTex.addSample(currentSpotInArrayTex);
+    addToArray(arrayTexID, "texture/block/gravel.png", currentSpotInArrayTex++);
+
+    Texture oakplanksTex(Type::SOLID);
+    oakplanksTex.addSample(currentSpotInArrayTex);
+    addToArray(arrayTexID, "texture/block/oak_planks.png", currentSpotInArrayTex++);
+
+    Texture stoneTex(Type::SOLID);
+    stoneTex.addSample(currentSpotInArrayTex);
+    addToArray(arrayTexID, "texture/block/stone.png", currentSpotInArrayTex++);
+
+    Texture oaklogTex(Type::SOLID);
+    oaklogTex.addSample(currentSpotInArrayTex);
+    addToArray(arrayTexID, "texture/block/oak_log.png", currentSpotInArrayTex++);
+    oaklogTex.addSample(currentSpotInArrayTex);
+    oaklogTex.addSample(currentSpotInArrayTex);
+    addToArray(arrayTexID, "texture/block/oak_log_top.png", currentSpotInArrayTex++);
+
+    Texture waterTex(Type::TRANSPARENT);
+    waterTex.addSample(currentSpotInArrayTex);
+    addToArray(arrayTexID, "texture/block/water.png", currentSpotInArrayTex++);
+
+    Texture oakleavesTex(Type::TRANSPARENT);
+    oakleavesTex.addSample(currentSpotInArrayTex);
+    addToArray(arrayTexID, "texture/block/oak_leaves.png", currentSpotInArrayTex++);
+
+    Texture bricksTex(Type::SOLID);
+    bricksTex.addSample(currentSpotInArrayTex);
+    addToArray(arrayTexID, "texture/block/bricks.png", currentSpotInArrayTex++);
+
+    /*Texture cactusTex(Type::SOLID);
+    cactusTex.addSample(currentSpotInArrayTex);
+    addToArray(arrayTexID, "texture/block/cactus_side.png");
+    cactusTex.addSample(currentSpotInArrayTex);
+    addToArray(arrayTexID, "texture/block/cactus_top.png");
+    cactusTex.addSample(currentSpotInArrayTex);
+    addToArray(arrayTexID, "texture/block/cactus_bottom.png");
+    Texture cobblestoneTex(Type::SOLID);
+    cobblestoneTex.addSample(currentSpotInArrayTex);
+    addToArray(arrayTexID, "texture/block/cobblestone.png");*/
+
+    textures["sand"] = sandTex;
+    textures["grass"] = grassTex;
+    textures["snow"] = snowTex;
+    textures["dirt"] = dirtTex;
+    textures["gravel"] = gravelTex;
+    textures["oakplanks"] = oakplanksTex;
+    textures["stone"] = stoneTex;
+    textures["oaklog"] = oaklogTex;
+    textures["water"] = waterTex;
+    textures["oakleaves"] = oakleavesTex;
+    textures["bricks"] = bricksTex;
+    //textures["cactus"] = cactusTex;
+    //textures["cobblestone"] = cobblestoneTex;
+}
+
+GLuint buildNormalTextureArrays()
+{
+    unsigned int currentSpotInArrayTex = 0;
+    GLuint arrayTexID = initTexArray(availableTextureSlot);
+
+    addToArray(arrayTexID, "texture/block/sand_n.png", currentSpotInArrayTex++);
+    addToArray(arrayTexID, "texture/block/grass_block_side_n.png", currentSpotInArrayTex++);
+    addToArray(arrayTexID, "texture/block/grass_block_top_n.png", currentSpotInArrayTex++);
+    addToArray(arrayTexID, "texture/block/grass_block_snow_n.png", currentSpotInArrayTex++);
+    addToArray(arrayTexID, "texture/block/powder_snow_n.png", currentSpotInArrayTex++);
+    addToArray(arrayTexID, "texture/block/dirt_n.png", currentSpotInArrayTex++);
+    addToArray(arrayTexID, "texture/block/gravel_n.png", currentSpotInArrayTex++);
+    addToArray(arrayTexID, "texture/block/oak_planks_n.png", currentSpotInArrayTex++);
+    addToArray(arrayTexID, "texture/block/stone_n.png", currentSpotInArrayTex++);
+    addToArray(arrayTexID, "texture/block/oak_log_n.png", currentSpotInArrayTex++);
+    addToArray(arrayTexID, "texture/block/oak_log_top_n.png", currentSpotInArrayTex++);
+    addToArray(arrayTexID, "texture/block/water_n.png", currentSpotInArrayTex++);
+    addToArray(arrayTexID, "texture/block/oak_leaves_n.png", currentSpotInArrayTex++);
+    addToArray(arrayTexID, "texture/block/bricks_n.png", currentSpotInArrayTex++);
+
+    return arrayTexID;
+}
+
+void initShaders()
+{
+    worldShader     = Shader("shader/chunkVertexShader.glsl",     "shader/chunkFragShader.glsl");
     playerShader    = Shader("shader/playerVertexShader.glsl",    "shader/playerFragShader.glsl");
     pointerShader   = Shader("shader/textVertexShader.glsl",      "shader/textFragShader.glsl");
     skyShader       = Shader("shader/skyboxVertexShader.glsl",    "shader/skyboxFragShader.glsl");
@@ -446,21 +329,25 @@ void initTextures()
     availableTextureSlot++;
 
     //bind normal map array
-    /*GLuint normalTex = buildNormalTextureArrays();
+    GLuint normalTex = buildNormalTextureArrays();
     glBindTexture(GL_TEXTURE_2D_ARRAY, normalTex);
     worldShader.use();
     worldShader.setInt("material.normalMap", availableTextureSlot);
-    availableTextureSlot++;*/
+    worldShader.setBool("material.useNormalTex", true);
+    playerShader.use();
+    playerShader.setInt("material.normalMap", availableTextureSlot);
+    playerShader.setBool("material.useNormalTex", true);
+    availableTextureSlot++;
 
     // bind font texture
-    GLuint fontTexture = loadTexture("texture/other/font.bmp");
+    GLuint fontTexture = loadTexture("texture/other/font.bmp", availableTextureSlot);
     glBindTexture(GL_TEXTURE_2D, fontTexture);
     pointerShader.use();
     pointerShader.setInt("material.textureData", availableTextureSlot);
     availableTextureSlot++;
 
     // bind selection texture
-    GLuint selectionTexture = loadTexture("texture/other/selection.png");
+    GLuint selectionTexture = loadTexture("texture/other/selection.png", availableTextureSlot);
     glBindTexture(GL_TEXTURE_2D, selectionTexture);
     playerShader.use();
     playerShader.setInt("material.textureData", availableTextureSlot);
@@ -484,10 +371,7 @@ void initTextures()
 void initScene()
 {
     //setup the light
-    light = Light(
-        glm::vec3(150.0, 100.0, 150.0),	   // position
-        glm::vec3(1.f, 1.f, 1.f)); 	       // color
-
+    light = Light(glm::vec3(150.0, 100.0, 150.0), glm::vec3(1.f, 1.f, 1.f)); // (position, color)
     light.setShadowMapOnGPU(availableTextureSlot);
     light.setFBO(allocateShadowMapFbo());
     availableTextureSlot++;
@@ -502,19 +386,15 @@ void initScene()
     camera.bindProjection(worldShader, playerShader, skyShader);
 
     // setup the player
-    player = Player(
-        glm::vec3(0.0, 50.0, 0.0),     // position
-        glm::vec3(0.0, 0.0, -1.0),     // front vector
-        glm::vec3(0.0, 1.0, 0.0));     // up vector
-
+    player = Player(glm::vec3(0.0, 50.0, 0.0), 0.f, -90.f); // (position, pitch, yaw)
     player.setPointerRatio(windowSize, pointerShader);
     player.insertBlock(textures["dirt"], 0);
-    player.insertBlock(textures["oakleaves"], 1);
+    player.insertBlock(textures["water"], 1);
     player.insertBlock(textures["gravel"], 2);
     player.insertBlock(textures["oakplanks"], 3);
-    player.insertBlock(textures["bricks"], 4);
+    player.insertBlock(textures["snow"], 4);
     player.insertBlock(textures["sand"], 5);
-    player.insertBlock(textures["cactus"], 6);
+    player.insertBlock(textures["bricks"], 6);
     player.insertBlock(textures["stone"], 7);
     player.insertBlock(textures["oaklog"], 8);
     player.insertBlock(textures["grass"], 9);
@@ -538,8 +418,8 @@ void update()
     camera.focusCamOnPlayer(player);
     camera.bindView(worldShader, playerShader, skyShader);
 
-    //update world attributes
-    world.updateSelection(camera.getPosition(), player.getFront());
+    //update player selection
+    world.updateSelection(player.getPosition(), player.getFront());
 }
 
 void render()
@@ -572,7 +452,7 @@ int main()
 {
     initGLFW();
     initOpenGL();
-    initTextures();
+    initShaders();
     initScene();
 
     while (!glfwWindowShouldClose(window))

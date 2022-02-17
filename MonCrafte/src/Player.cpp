@@ -1,13 +1,12 @@
 #include "Player.h"
 
-Player::Player(glm::vec3 position, glm::vec3 front, glm::vec3 up) :
-    playerPos(position), playerFront(front), worldUp(glm::vec3(0, 1, 0)),
+Player::Player(glm::vec3 position, float pitch, float yaw) :
+    playerPos(position), pitch(pitch), yaw(yaw), worldUp(glm::vec3(0, 1, 0)),
     availableBlocks(std::vector<Texture>(10, Texture())),
     pointer(Text2D("X", 1, glm::vec2(0.5, 0.5), 40))
 {
     updatePlayerVectors();
     pointer.bindVBOs();
-
     block = std::make_shared<Block>(glm::vec3(0.f), Texture());
 
     // generate the VAO
@@ -22,9 +21,8 @@ void Player::insertBlock(Texture tex, unsigned int position)
 
 void Player::updatePosition(GLFWwindow* window, float deltaTime, World world, bool dynamic)
 {
+    // dealing with horizontal displacement
     glm::vec3 newPosH = playerPos;
-    glm::vec3 newPosV = playerPos;
-
     float speed = horizontalSpeed * deltaTime;
 
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
@@ -37,11 +35,10 @@ void Player::updatePosition(GLFWwindow* window, float deltaTime, World world, bo
         newPosH -= playerRight * speed;
 
     if (!world.collide(newPosH))
-    {
-        playerPos.x = newPosH.x;
-        playerPos.z = newPosH.z;
-    }
+        playerPos = newPosH;
 
+    // dealing with vertical displacement
+    glm::vec3 newPosV = playerPos;
     if (dynamic)
     {
         glm::vec3 force = gravity * M;
@@ -56,7 +53,7 @@ void Player::updatePosition(GLFWwindow* window, float deltaTime, World world, bo
         playerMomentum += deltaTime * force;
         playerVelocity += playerMomentum / M;
 
-        // frottements
+        // frictional forces induce velocity limitation
         if (playerVelocity.y < -40)
             playerVelocity.y = -40;
         if (playerVelocity.y > 20)
@@ -71,7 +68,7 @@ void Player::updatePosition(GLFWwindow* window, float deltaTime, World world, bo
             onJump = false;
         }
         else
-          playerPos.y = newPosV.y;
+          playerPos = newPosV;
     }
     else
     {
@@ -81,7 +78,7 @@ void Player::updatePosition(GLFWwindow* window, float deltaTime, World world, bo
             newPosV -= worldUp * speed;
 
         if (!world.collideOnY(newPosV))
-            playerPos.y = newPosV.y;
+            playerPos = newPosV;
     }
 }
 
@@ -203,21 +200,23 @@ void Player::render(Shader playerShader, Shader pointerShader, World world)
     // render the block in the hand of the player
     if (availableBlocks[currentBlock].getType() != Type::AIR)
     {
-        playerShader.setBool("useArray", true);
-        glm::mat4 transfo = glm::translate(glm::mat4(1.f), playerPos - playerRight / 7);
-        transfo = glm::rotate(transfo, glm::radians(pitch), playerRight);
-        transfo = glm::scale(transfo, glm::vec3(0.1f));
-        playerShader.setMat4("transMat", transfo);
+        glm::mat4 transMat = glm::translate(glm::mat4(1.f), playerPos - playerRight / 7);
+        transMat = glm::rotate(transMat, glm::radians(pitch), playerRight);
+        transMat = glm::scale(transMat, glm::vec3(0.1f));
+        playerShader.setMat4("transMat", transMat);
+        playerShader.setBool("material.useArrayTex", true);
         glDrawArrays(GL_TRIANGLES, 0, vertices.size());
     }
     // render the selection over the block selected by the player
     if (world.isSelection())
     {
-        playerShader.setBool("useArray", false);
-        glm::mat4 transMat = glm::scale(glm::translate(glm::mat4(1.f), world.getSelection()), glm::vec3(1.01f));
+        glm::mat4 transMat = glm::translate(glm::mat4(1.f), world.getSelection());
+        transMat = glm::scale(transMat, glm::vec3(1.01f));
         playerShader.setMat4("transMat", transMat);
+        playerShader.setBool("material.useArrayTex", false);
         glDrawArrays(GL_TRIANGLES, 0, vertices.size());
     }
+    // render the player pointer
     pointerShader.use();
     pointer.render();
 }

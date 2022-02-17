@@ -3,7 +3,8 @@
 struct Material
 {
 	sampler2DArray textureArray;
-	//sampler2DArray normalMap;
+	sampler2DArray normalMap;
+	bool useNormalTex;
 };
 
 uniform Material material;
@@ -48,9 +49,14 @@ float shadowCalculation()
 
 void main()
 {
-	//vec3 normal = texture(material.normalMap, vec3(fTex, layer)).rgb;
-	//normal = normalize(normal * 2.0 - 1.0);
-	vec3 normal = normalize(fNor);
+	vec3 normal;
+	if(material.useNormalTex)
+	{
+		normal = texture(material.normalMap, vec3(fTex, layer)).rgb;
+		normal = normalize(normal * 2.0 - 1.0);
+	}
+	else
+		normal = normalize(fNor);
 
 	vec3 lightDir = normalize(lightPos - fPos);
 	vec3 viewDir = normalize(camPos - fPos);

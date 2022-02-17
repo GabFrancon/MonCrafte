@@ -9,7 +9,7 @@ class Player
 {
 public:
     Player() {};
-    Player(glm::vec3 position, glm::vec3 front, glm::vec3 up);
+    Player(glm::vec3 position, float pitch, float yaw);
 
     glm::vec3 getPosition() const { return playerPos; }
     glm::vec3 getFront() const { return playerFront; }
@@ -49,8 +49,8 @@ private:
     float scroll = 4.0f;
     float mouseSensitivity = 0.05f;
     float horizontalSpeed = 10.f;
-    float yaw = -90.f;                   // yaw euler angle
     float pitch = 0.f;                   // pitch euler angle
+    float yaw = -90.f;                 // yaw euler angle
 
     int currentBlock = 0;
     std::vector<Texture> availableBlocks;
@@ -59,11 +59,11 @@ private:
     Text2D pointer;
     BlockPtr block;
 
-    GLuint vao = 0;
-    GLuint posVbo = 0;
+    GLuint vao     = 0;
+    GLuint posVbo  = 0;
     GLuint normVbo = 0;
-    GLuint texVbo = 0;
-    GLuint indVbo = 0;
+    GLuint texVbo  = 0;
+    GLuint indVbo  = 0;
 
     std::vector<float> vertices;
     std::vector<float> normals;
