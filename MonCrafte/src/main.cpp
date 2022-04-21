@@ -333,10 +333,10 @@ void initShaders()
     glBindTexture(GL_TEXTURE_2D_ARRAY, normalTex);
     worldShader.use();
     worldShader.setInt("material.normalMap", availableTextureSlot);
-    worldShader.setBool("material.useNormalTex", true);
+    worldShader.setBool("material.useNormalTex", false);
     playerShader.use();
     playerShader.setInt("material.normalMap", availableTextureSlot);
-    playerShader.setBool("material.useNormalTex", true);
+    playerShader.setBool("material.useNormalTex", false);
     availableTextureSlot++;
 
     // bind font texture
