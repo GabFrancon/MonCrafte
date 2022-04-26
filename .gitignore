@@ -31,12 +31,6 @@
 *.out
 *.app
 
-# Include
-MonCrafte/include/*
-
-#Library
-MonCrafte/library/*
-
 # Visual Studio
 .vs/*
 x64/*
