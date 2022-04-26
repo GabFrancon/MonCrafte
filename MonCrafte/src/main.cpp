@@ -25,13 +25,16 @@ Shader shadowMapShader;
 float currentFrame = 0.f;
 float lastFrame    = 0.f;
 float lastTime     = 0.f;
-int nbFrames       = 0;
+int   nbFrames     = 0;
 
 // mouse
 float lastX = 0.f;
 float lastY = 0.f;
-bool  firstMouse   = true;
+bool  firstMouse = true;
+
+// game parameters
 bool  survivalMode = false;
+bool  polygonView  = false;
 
 // textures
 std::map<std::string, Texture> textures;
@@ -88,17 +91,28 @@ void windowSizeCallback(GLFWwindow* window, int width, int height)
 // Executed each time a key is pressed.
 void keyCallback(GLFWwindow* window, int key, int scancode, int action, int mods)
 {
-    if (action == GLFW_PRESS && key == GLFW_KEY_E)
-        glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+    if (action == GLFW_PRESS && key == GLFW_KEY_V) {
+        polygonView = !polygonView;
+        if (polygonView)
+            glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+        else
+            glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+    }
 
-    else if (action == GLFW_PRESS && key == GLFW_KEY_F)
-        glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-
-    else if (action == GLFW_PRESS && key == GLFW_KEY_R)
+    else if (action == GLFW_PRESS && key == GLFW_KEY_M)
         survivalMode = !survivalMode;
 
     else if (action == GLFW_PRESS && key == GLFW_KEY_ESCAPE)
         glfwSetWindowShouldClose(window, true);
+    
+    else if (action == GLFW_PRESS && key == GLFW_KEY_H) {
+        std::cout << "\n\nHot keys : \n"
+            << "        V ---> activate/deactivate polygon view\n"
+            << "        H ---> get help for hot keys\n"
+            << "        M ---> activate/deactivate gravity\n"
+            << "        ESC -> close window\n"
+            << std::endl;
+    }
 }
 
 // Executed each time the mouse is mooved.
@@ -262,16 +276,17 @@ GLuint buildTextureArrays()
     bricksTex.addSample(currentSpotInArrayTex);
     addToArray(arrayTexID, "texture/block/bricks.png", currentSpotInArrayTex++);
 
-    /*Texture cactusTex(Type::SOLID);
+    Texture cactusTex(Type::TRANSPARENT);
     cactusTex.addSample(currentSpotInArrayTex);
-    addToArray(arrayTexID, "texture/block/cactus_side.png");
+    addToArray(arrayTexID, "texture/block/cactus_side.png", currentSpotInArrayTex++);
     cactusTex.addSample(currentSpotInArrayTex);
-    addToArray(arrayTexID, "texture/block/cactus_top.png");
+    addToArray(arrayTexID, "texture/block/cactus_top.png", currentSpotInArrayTex++);
     cactusTex.addSample(currentSpotInArrayTex);
-    addToArray(arrayTexID, "texture/block/cactus_bottom.png");
+    addToArray(arrayTexID, "texture/block/cactus_bottom.png", currentSpotInArrayTex++);
+
     Texture cobblestoneTex(Type::SOLID);
     cobblestoneTex.addSample(currentSpotInArrayTex);
-    addToArray(arrayTexID, "texture/block/cobblestone.png");*/
+    addToArray(arrayTexID, "texture/block/cobblestone.png", currentSpotInArrayTex++);
 
     textures["sand"] = sandTex;
     textures["grass"] = grassTex;
@@ -284,8 +299,10 @@ GLuint buildTextureArrays()
     textures["water"] = waterTex;
     textures["oakleaves"] = oakleavesTex;
     textures["bricks"] = bricksTex;
-    //textures["cactus"] = cactusTex;
-    //textures["cobblestone"] = cobblestoneTex;
+    textures["cactus"] = cactusTex;
+    textures["cobblestone"] = cobblestoneTex;
+
+    return arrayTexID;
 }
 
 GLuint buildNormalTextureArrays()
@@ -389,8 +406,8 @@ void initScene()
     player = Player(glm::vec3(0.0, 50.0, 0.0), 0.f, -90.f); // (position, pitch, yaw)
     player.setPointerRatio(windowSize, pointerShader);
     player.insertBlock(textures["dirt"], 0);
-    player.insertBlock(textures["water"], 1);
-    player.insertBlock(textures["gravel"], 2);
+    player.insertBlock(textures["cobblestone"], 1);
+    player.insertBlock(textures["cactus"], 2);
     player.insertBlock(textures["oakplanks"], 3);
     player.insertBlock(textures["snow"], 4);
     player.insertBlock(textures["sand"], 5);

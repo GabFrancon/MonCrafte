@@ -190,7 +190,7 @@ void World::updateSelection(glm::vec3 playerPos, glm::vec3 lookAt)
 			{
 				glm::vec3 pos = glm::vec3(x, y, z);
 				BlockPtr block = getBlock(pos);
-				if(block->isSolid() && !block->isHidden())
+				if(!block->isEmpty() && !block->isHidden())
 				{
 					std::vector<float> dist{
 						faceDistance(playerPos, lookAt, pos + glm::vec3(0.0, 0.0, 0.5), glm::vec3(0.0, 0.0, 1.0)),
