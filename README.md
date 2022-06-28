@@ -1,5 +1,5 @@
 # MonCrafte
-Development of a simplified version of Mojang's ***Minecraft*** game in C++ and with the ***openGL*** 3D graphics API.
+Development of a simplified version of Mojang's ***Minecraft*** game using the ***openGL*** graphics API. Main code in C++, shaders in GLSL.
 
 <p float="center">
   <img src="./resources/screenshot_1.PNG" width="400"/>
