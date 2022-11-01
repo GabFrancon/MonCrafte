@@ -15,9 +15,7 @@ public:
 
     float get(float x, float y)
     {
-        float vec[2];
-        vec[0] = x;
-        vec[1] = y;
+        float vec[2] = { x, y };
         return perlin_noise_2D(vec);
     };
 

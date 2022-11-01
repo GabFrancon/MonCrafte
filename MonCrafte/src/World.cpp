@@ -296,7 +296,6 @@ void World::genWorld()
 			int index = chunkIndex(i, j);
 			chunkMap[index] = std::make_shared<Chunk>(chunkSize);
 			glm::ivec2 chunkPos(i, j);
-			Biome biome = biomeHelper.getRelatedBiome(chunkPos);
 
 			for (int x = 0; x < chunkSize.x; x++)
 				for (int z = 0; z < chunkSize.z; z++)

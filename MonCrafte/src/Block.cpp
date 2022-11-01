@@ -8,6 +8,7 @@ std::string Block::getReversedFace(std::string name)
 	if (name == "bottom")return "top";
 	if (name == "front") return "back";
 	if (name == "back")  return "front";
+	return "";
 }
 
 void Block::fillObject(Texture texture)
